@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Fixed UI Persistence</title>
+    <title>Gift Card Tracker - QR Fix</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -33,11 +33,10 @@
         #reader-container { width: 100%; flex-grow: 1; background: #000; position: relative; overflow: hidden; }
         #reader { width: 100%; height: 100%; }
         
-        /* The UI layer that never gets deleted */
         #scanner-ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
         .scan-window { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); border: 2.5px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); }
         .rect-box { width: 280px; height: 110px; }
-        .square-box { width: 240px; height: 240px; }
+        .square-box { width: 250px; height: 250px; } /* Updated for QR Fix */
 
         .scanner-footer { background: #fff; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 15px; border-radius: 24px 24px 0 0; z-index: 100; pointer-events: auto; }
         .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 12px; }
@@ -66,7 +65,6 @@
 <div id="scanner-overlay">
     <div id="reader-container">
         <div id="reader"></div>
-        
         <div id="scanner-ui-layer">
             <div id="scan-window" class="scan-window"></div>
         </div>
@@ -147,7 +145,6 @@
             html5QrCode.clear();
             html5QrCode = null;
         }
-        // Only clear the video container, not the UI layer
         document.getElementById('reader').innerHTML = '';
     }
 
@@ -164,13 +161,14 @@
         const snap = document.getElementById('btn-snap');
         const hint = document.getElementById('scan-hint');
 
+        // Logic split: QR (act) gets a square search box and specific QR format filter
         let config = { fps: 20 };
-
         if (mode === 'act') {
             win.className = "scan-window square-box";
             hint.innerText = "Align QR Code";
             snap.style.display = 'none';
-            config.qrbox = { width: 240, height: 240 };
+            config.qrbox = { width: 250, height: 250 };
+            config.formatsToSupport = [ Html5QrcodeSupportedFormats.QR_CODE ]; // QR FIX: Force QR mode only
         } else {
             win.className = "scan-window rect-box";
             hint.innerText = (mode === 'gc') ? "Focus Code & Snap" : "Align Barcode";
@@ -187,7 +185,7 @@
                 captureFrame();
                 changeStep(2);
             }
-        }).catch(err => alert("Camera Error: Check Permissions"));
+        }).catch(err => alert("Camera Error. Please refresh."));
     }
 
     function manualSnap() {
