@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Fix Edition</title>
+    <title>Gift Card Tracker - Restore Fix</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -11,7 +11,7 @@
         :root { --primary: #2563eb; --secondary: #0f172a; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; --google-blue: #4285F4; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #1e293b; }
         
-        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
         .inr-text { font-size: 1.6rem; font-weight: 800; color: var(--success); }
 
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
@@ -25,10 +25,10 @@
         .scan-group { display: flex; gap: 8px; }
         .btn-scan { background: #f1f5f9; color: var(--secondary); border: 1.5px solid #e2e8f0; padding: 0 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; }
 
-        /* LENS UI */
+        /* SCANNER OVERLAY */
         #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
         #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
-        .scan-window { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 100px; border: 2px solid rgba(255,255,255,0.5); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 100; pointer-events: none; }
+        .scan-window { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 100px; border: 2px solid rgba(255,255,255,0.4); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 100; pointer-events: none; }
         .scan-window::before { content: ''; position: absolute; top: -2px; left: -2px; width: 20px; height: 20px; border: 4px solid var(--google-blue); border-right: 0; border-bottom: 0; border-radius: 12px 0 0 0; }
         .scan-window::after { content: ''; position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; border: 4px solid var(--google-blue); border-left: 0; border-top: 0; border-radius: 0 0 12px 0; }
 
@@ -36,8 +36,9 @@
         .shutter-btn { width: 70px; height: 70px; background: #fff; border: 5px solid #e2e8f0; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .shutter-inner { width: 54px; height: 54px; background: var(--google-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
 
+        /* CONFIRMATION UI - THIS WAS THE MISSING LINK */
         #confirm-ui { display: none; width: 100%; flex-direction: column; align-items: center; gap: 15px; }
-        .result-preview { width: 90%; text-align: center; font-size: 24px; font-weight: bold; color: var(--google-blue); padding: 15px; background: #f8faff; border-radius: 12px; border: 1.5px solid var(--google-blue); }
+        .result-preview { width: 90%; text-align: center; font-size: 24px; font-weight: bold; color: var(--google-blue); padding: 15px; background: #f8faff; border-radius: 12px; border: 2px solid var(--google-blue); }
 
         .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 100; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #64748b; font-size: 11px; font-weight: 600; cursor: pointer; background: none; border: none; gap: 4px; }
@@ -48,7 +49,7 @@
 
 <div class="top-dash">
     <div>
-        <div style="font-size: 10px; font-weight: bold; color: #94a3b8; letter-spacing: 1px;">TOTAL BALANCE</div>
+        <div style="font-size: 10px; font-weight: bold; color: #94a3b8;">TOTAL BALANCE</div>
         <div class="inr-text" id="totalINR">₹0.00</div>
     </div>
     <select id="yearFilter" onchange="refresh()" style="width: auto; padding: 6px 12px; background: rgba(255,255,255,0.1); color: white; border: none; font-weight: bold; border-radius: 8px;"></select>
@@ -60,9 +61,13 @@
     <div id="reader"><div class="scan-window"></div></div>
     <div class="scanner-footer">
         <div id="scan-status" style="font-weight: 600; color: #475569;">Focus on code</div>
+        
         <div id="shutter-group">
-            <div class="shutter-btn" onclick="captureOCR()"><div class="shutter-inner"><i class="material-icons-round">center_focus_strong</i></div></div>
+            <div class="shutter-btn" onclick="captureOCR()">
+                <div class="shutter-inner"><i class="material-icons-round">center_focus_strong</i></div>
+            </div>
         </div>
+
         <div id="confirm-ui">
             <input type="text" id="edit-result" class="result-preview">
             <button onclick="commitScan()" style="background:var(--google-blue); color:white; border:none; padding:15px; border-radius:50px; font-weight:bold; width: 100%; display:flex; align-items:center; justify-content:center; gap:8px;">
@@ -82,7 +87,7 @@
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_Ultimate_V2";
+    const DB_KEY = "Tracker_Ultimate_V3";
     let html5QrCode = null;
     let currentInput = null;
     let scanMode = 'ocr';
@@ -135,12 +140,12 @@
             document.getElementById('shutter-group').style.display = 'none';
             document.getElementById('scan-status').innerText = "Scanning Barcode...";
             html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: {width: 250, height: 100} }, (txt) => {
-                // FIXED: Now Barcode also shows confirmation screen
+                // Show Result for Confirmation
                 document.getElementById('edit-result').value = txt;
                 document.getElementById('shutter-group').style.display = 'none';
                 document.getElementById('confirm-ui').style.display = 'flex';
                 document.getElementById('scan-status').innerText = "Barcode Detected";
-                html5QrCode.pause(); // Pause camera feed
+                html5QrCode.pause(); 
             });
         } else {
             document.getElementById('shutter-group').style.display = 'flex';
@@ -159,14 +164,16 @@
 
         const { data: { text } } = await worker.recognize(canvas);
         document.getElementById('edit-result').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
+        
         document.getElementById('shutter-group').style.display = 'none';
         document.getElementById('confirm-ui').style.display = 'flex';
+        document.getElementById('scan-status').innerText = "Verify OCR Result";
     }
 
     function commitScan() {
         if (currentInput) {
             currentInput.value = document.getElementById('edit-result').value;
-            save(); refresh();
+            save(); refresh(); // Push data and refresh total
         }
         stopScanner();
     }
@@ -182,8 +189,13 @@
     }
 
     function stopScanner() {
-        if (html5QrCode && html5QrCode.isScanning) html5QrCode.stop();
-        document.getElementById('scanner-overlay').style.display = 'none';
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('scanner-overlay').style.display = 'none';
+            });
+        } else {
+            document.getElementById('scanner-overlay').style.display = 'none';
+        }
     }
 
     function refresh() {
