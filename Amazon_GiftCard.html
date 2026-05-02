@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Capture Preview Fix</title>
+    <title>Gift Card Tracker - Data First UI</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -11,48 +11,52 @@
         :root { --primary: #4285F4; --success: #34A853; --danger: #EA4335; --secondary: #202124; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #3c4043; }
         
-        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
         .inr-text { font-size: 1.6rem; font-weight: 800; color: var(--success); }
 
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
-        .item-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .item-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         
-        .btn-del { position: absolute; top: -10px; right: -10px; background: white; color: var(--danger); border: 1px solid #fee2e2; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-del { position: absolute; top: -10px; right: -10px; background: white; color: var(--danger); border: 1px solid #fee2e2; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .full-width { grid-column: span 2; }
-        label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
-        input, select { width: 100%; box-sizing: border-box; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; }
         
-        .scan-group { display: flex; gap: 8px; }
-        .btn-scan { background: #f1f5f9; color: var(--secondary); border: 1.5px solid #e2e8f0; padding: 0 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; }
+        label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        
+        /* THE FIX: LARGE TEXT BOXES, SMALL BUTTONS */
+        .scan-group { display: flex; align-items: center; background: #fff; border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; transition: border 0.2s; }
+        .scan-group:focus-within { border-color: var(--primary); }
+        
+        input, select { width: 100%; border: none; padding: 10px 12px; font-size: 14px; font-weight: 500; outline: none; color: #1e293b; background: transparent; }
+        .price-input { border: 1.5px solid #cbd5e1; border-radius: 10px; width: 100%; box-sizing: border-box; }
 
+        .btn-icon-scan { background: #f8fafc; border-left: 1px solid #e2e8f0; color: #64748b; padding: 8px 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-icon-scan:active { background: #f1f5f9; color: var(--primary); }
+
+        /* SCANNER OVERLAY */
         #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
-        #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
-        .scan-window { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 100px; border: 2px solid rgba(255,255,255,0.3); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 100; pointer-events: none; }
-        .scan-window::after { content: ''; position: absolute; inset: -2px; border: 3px solid var(--primary); border-radius: 12px; clip-path: polygon(0 0, 20% 0, 20% 100%, 0 100%, 0 80%, 100% 80%, 100% 100%, 80% 100%, 80% 0, 100% 0, 100% 20%, 0 20%); }
+        #reader { width: 100%; flex-grow: 1; }
+        .scan-window { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 300px; height: 100px; border: 2px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); z-index: 100; pointer-events: none; }
 
-        .scanner-footer { background: #fff; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; border-radius: 24px 24px 0 0; min-height: 250px; }
-        .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 15px; }
+        .scanner-footer { background: #fff; padding: 25px; display: flex; flex-direction: column; align-items: center; gap: 15px; border-radius: 24px 24px 0 0; }
+        .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 12px; }
         .active-step { display: flex; }
 
-        .shutter-btn { width: 70px; height: 70px; background: #fff; border: 5px solid #e2e8f0; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .shutter-inner { width: 54px; height: 54px; background: var(--primary); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; }
+        #captured-img { width: 100%; max-height: 120px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .result-box { width: 100%; text-align: center; font-size: 20px; font-weight: bold; color: var(--primary); padding: 12px; background: #f1f5f9; border-radius: 10px; border: none; margin: 10px 0; }
 
-        #captured-img { width: 90%; max-height: 120px; object-fit: contain; border-radius: 12px; border: 2px solid var(--primary); background: #000; }
-        .result-preview { width: 90%; text-align: center; font-size: 22px; font-weight: bold; color: var(--primary); padding: 15px; background: #f8faff; border: 2px solid var(--primary); border-radius: 12px; outline: none; }
-
+        /* BOTTOM NAV */
         .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 100; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #64748b; font-size: 11px; font-weight: 600; cursor: pointer; background: none; border: none; gap: 4px; }
-        .btn-add-main { background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(66,133,244,0.4); margin-top: -40px; border: 4px solid white; }
+        .btn-add-main { background: var(--primary); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(66,133,244,0.3); margin-top: -35px; border: 4px solid white; }
     </style>
 </head>
 <body>
 
 <div class="top-dash">
     <div>
-        <div style="font-size: 10px; font-weight: bold; color: #94a3b8;">TOTAL BALANCE</div>
+        <div style="font-size: 10px; font-weight: bold; color: #94a3b8;">YEARLY TOTAL</div>
         <div class="inr-text" id="totalINR">₹0.00</div>
     </div>
-    <select id="yearFilter" onchange="refresh()" style="width: auto; padding: 6px 12px; background: rgba(255,255,255,0.1); color: white; border: none; font-weight: bold; border-radius: 8px;"></select>
+    <select id="yearFilter" onchange="refresh()" style="width: auto; padding: 4px 8px; color: white; background: #374151; border-radius: 6px;"></select>
 </div>
 
 <div class="container" id="expenseList"></div>
@@ -62,56 +66,54 @@
     <div class="scanner-footer">
         
         <div id="step-1" class="scan-step active-step">
-            <div id="scan-label" style="font-weight: 600; color: #475569;">Align code in the box</div>
-            <div class="shutter-btn" onclick="takePhoto()">
-                <div class="shutter-inner"><i class="material-icons-round">photo_camera</i></div>
+            <span id="scan-label" style="font-weight: 600;">Point at the code</span>
+            <div onclick="takePhoto()" style="width:60px; height:60px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white;">
+                <i class="material-icons-round" style="font-size:30px">photo_camera</i>
             </div>
-            <button onclick="stopScanner()" style="background:none; border:none; color:#94a3b8; font-weight:600;">CANCEL</button>
+            <button onclick="stopScanner()" style="border:none; background:none; color:#94a3b8; font-weight:700;">CANCEL</button>
         </div>
 
         <div id="step-2" class="scan-step">
-            <div style="font-weight: 600; color: #475569;">Captured Image</div>
+            <span style="font-weight: 600;">Verify Photo</span>
             <canvas id="hidden-canvas" style="display:none;"></canvas>
             <img id="captured-img" src="">
             <div style="display:flex; gap:10px; width:100%;">
-                <button id="process-btn" onclick="runLogic()" style="flex:2; background:var(--primary); color:white; border:none; padding:15px; border-radius:50px; font-weight:bold;">PROCESS CODE</button>
-                <button onclick="resetScanner()" style="flex:1; background:#f1f5f9; border:none; padding:15px; border-radius:50px;"><i class="material-icons-round">refresh</i></button>
+                <button onclick="runLogic()" style="flex:1; background:var(--primary); color:white; border:none; padding:12px; border-radius:30px; font-weight:bold;">PROCESS</button>
+                <button onclick="resetScanner()" style="padding:12px; border:none; border-radius:30px; background:#f1f5f9;"><i class="material-icons-round">refresh</i></button>
             </div>
         </div>
 
         <div id="step-3" class="scan-step">
-            <div style="font-weight: 600; color: #475569;">Verify Detected Code</div>
-            <input type="text" id="final-code" class="result-preview">
-            <button onclick="confirmAndSave()" style="background:var(--success); color:white; border:none; padding:15px; border-radius:50px; font-weight:bold; width: 100%;">CONFIRM & SAVE</button>
-            <button onclick="resetScanner()" style="background:none; border:none; color:#64748b; font-weight:bold;">RETAKE</button>
+            <span style="font-weight: 600;">Is this correct?</span>
+            <input type="text" id="final-code" class="result-box">
+            <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:15px; border-radius:30px; font-weight:bold;">CONFIRM & SAVE</button>
+            <button onclick="resetScanner()" style="border:none; background:none; color:#94a3b8; font-weight:700;">RETAKE</button>
         </div>
-
     </div>
 </div>
 
 <div class="bottom-actions">
-    <button class="nav-item" onclick="document.getElementById('importFile').click()"><i class="material-icons-round" style="color:#ea4335">file_upload</i><span>Import</span></button>
-    <button class="btn-add-main" onclick="addNew()"><i class="material-icons-round" style="font-size:32px">add</i></button>
-    <button class="nav-item" onclick="exportData()"><i class="material-icons-round" style="color:#34a853">file_download</i><span>Export</span></button>
+    <div onclick="document.getElementById('importFile').click()" style="text-align:center; color:#64748b; font-size:11px;"><i class="material-icons-round" style="color:var(--danger)">file_upload</i><br>Import</div>
+    <div class="btn-add-main" onclick="addNew()"><i class="material-icons-round" style="font-size:32px">add</i></div>
+    <div onclick="exportData()" style="text-align:center; color:#64748b; font-size:11px;"><i class="material-icons-round" style="color:var(--success)">file_download</i><br>Export</div>
 </div>
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_VisualCapture_V1";
+    const DB_KEY = "Tracker_Final_V5";
     let html5QrCode = null;
-    let targetId = null;
+    let activeInput = null;
     let mode = 'barcode';
     let worker = null;
-    let lastBarcode = null;
+    let barcodeBuffer = null;
 
     async function init() {
         const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-        const yf = document.getElementById('yearFilter');
         const cy = new Date().getFullYear();
-        yf.innerHTML = "";
-        for(let i=cy-2; i<=cy+1; i++) {
-            let o = document.createElement('option'); o.value = i; o.innerText = i;
-            if(i === cy) o.selected = true; yf.appendChild(o);
+        const yf = document.getElementById('yearFilter');
+        for(let i=cy-2; i<=cy+1; i++){
+            let o = document.createElement('option'); o.value=i; o.innerText=i;
+            if(i===cy) o.selected=true; yf.appendChild(o);
         }
         if(saved.length === 0) addNew(); else saved.forEach(s => addNew(s));
         refresh();
@@ -119,44 +121,62 @@
     }
 
     function addNew(data = {}) {
-        const id = "id_" + Date.now() + Math.floor(Math.random()*1000);
         const div = document.createElement('div');
         div.className = "item-card";
-        div.dataset.id = id;
         div.innerHTML = `
-            <button class="btn-del" onclick="this.parentElement.remove(); save(); refresh();"><i class="material-icons-round" style="font-size:18px">close</i></button>
-            <div><label>Date</label><input type="date" class="d-date" value="${data.date || ''}" onchange="save(); refresh();"></div>
-            <div class="full-width"><label>Description</label><input type="text" class="d-item" value="${data.item || ''}" oninput="save();"></div>
-            <div><label>Ref ID</label><div class="scan-group"><input type="text" id="ref_${id}" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="startScanner('ref_${id}', 'barcode')"><i class="material-icons-round">barcode_scanner</i></button></div></div>
-            <div><label>Price (₹)</label><input type="number" class="d-price" value="${data.price || ''}" oninput="save(); refresh();"></div>
-            <div><label>Disc %</label><input type="number" class="d-disc" value="${data.disc || ''}" oninput="save(); refresh();"></div>
-            <div><label>Gift Code</label><div class="scan-group"><input type="text" id="gc_${id}" class="d-gccode" value="${data.gccode || ''}" oninput="save();"><button class="btn-scan" onclick="startScanner('gc_${id}', 'ocr')"><i class="material-icons-round">photo_camera</i></button></div></div>
-            <div><label>Redeemed</label><select class="d-redeemed" onchange="save();"><option ${data.redeemed=='No'?'selected':''}>No</option><option ${data.redeemed=='Yes'?'selected':''}>Yes</option></select></div>
+            <div class="btn-del" onclick="this.parentElement.remove(); save(); refresh();"><i class="material-icons-round" style="font-size:16px">close</i></div>
+            <div><label>Date</label><input type="date" class="d-date price-input" value="${data.date || ''}" onchange="save(); refresh();"></div>
+            <div><label>Price (₹)</label><input type="number" class="d-price price-input" value="${data.price || ''}" oninput="save(); refresh();"></div>
+            <div class="full-width"><label>Description</label><input type="text" class="d-item price-input" placeholder="Note..." value="${data.item || ''}" oninput="save();"></div>
+            
+            <div class="full-width">
+                <label>Ref ID (Barcode)</label>
+                <div class="scan-group">
+                    <input type="text" class="d-ref" placeholder="Barcode value" value="${data.ref || ''}" oninput="save();">
+                    <div class="btn-icon-scan" onclick="startScan(this, 'barcode')"><i class="material-icons-round">barcode_scanner</i></div>
+                </div>
+            </div>
+
+            <div class="full-width">
+                <label>Gift Card (Camera)</label>
+                <div class="scan-group">
+                    <input type="text" class="d-gc" placeholder="Extracted code" value="${data.gc || ''}" oninput="save();">
+                    <div class="btn-icon-scan" onclick="startScan(this, 'ocr')"><i class="material-icons-round">photo_camera</i></div>
+                </div>
+            </div>
+
+            <div><label>Discount %</label><input type="number" class="d-disc price-input" value="${data.disc || ''}" oninput="save(); refresh();"></div>
+            <div><label>Status</label>
+                <select class="d-status price-input" onchange="save();">
+                    <option ${data.status=='No'?'selected':''}>No</option>
+                    <option ${data.status=='Yes'?'selected':''}>Yes</option>
+                </select>
+            </div>
         `;
         document.getElementById('expenseList').appendChild(div);
     }
 
-    async function startScanner(inputId, scanMode) {
-        targetId = inputId;
+    async function startScan(btn, scanMode) {
+        activeInput = btn.parentElement.querySelector('input');
         mode = scanMode;
-        lastBarcode = null;
+        barcodeBuffer = null;
         document.getElementById('scanner-overlay').style.display = 'flex';
         changeStep(1);
 
-        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
         
         const config = { facingMode: "environment" };
-        const scanConfig = { fps: 20, qrbox: { width: 250, height: 100 } };
+        const qConfig = { fps: 20, qrbox: { width: 280, height: 100 } };
 
-        if (mode === 'barcode') {
-            document.getElementById('scan-label').innerText = "Scanning Barcode...";
-            html5QrCode.start(config, scanConfig, (txt) => {
-                lastBarcode = txt;
-                takePhoto(); // Auto-take photo when barcode is hit to show the user
+        if(mode === 'barcode') {
+            document.getElementById('scan-label').innerText = "Scanning for Barcode...";
+            html5QrCode.start(config, qConfig, (txt) => {
+                barcodeBuffer = txt;
+                takePhoto(); // Capture image for UI verification
             });
         } else {
-            document.getElementById('scan-label').innerText = "Align Gift Code & Capture";
-            await html5QrCode.start(config, scanConfig, () => {});
+            document.getElementById('scan-label').innerText = "Center code & Take Photo";
+            await html5QrCode.start(config, qConfig, () => {});
         }
     }
 
@@ -165,20 +185,18 @@
         const canvas = document.getElementById('hidden-canvas');
         canvas.width = 800; canvas.height = 300;
         const ctx = canvas.getContext('2d');
-        // Crop the video to just the scan window area for the preview
-        ctx.drawImage(video, video.videoWidth*0.15, video.videoHeight*0.35, video.videoWidth*0.7, video.videoHeight*0.2, 0, 0, 800, 300);
-        
+        ctx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.35, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 800, 300);
         document.getElementById('captured-img').src = canvas.toDataURL('image/png');
         changeStep(2);
-        if (html5QrCode) html5QrCode.pause();
+        if(html5QrCode) html5QrCode.pause();
     }
 
     async function runLogic() {
-        if (mode === 'barcode' && lastBarcode) {
-            document.getElementById('final-code').value = lastBarcode;
+        if(mode === 'barcode' && barcodeBuffer) {
+            document.getElementById('final-code').value = barcodeBuffer;
             changeStep(3);
         } else {
-            document.getElementById('final-code').value = "Reading Text...";
+            document.getElementById('final-code').value = "Extracting...";
             changeStep(3);
             const canvas = document.getElementById('hidden-canvas');
             const { data: { text } } = await worker.recognize(canvas);
@@ -186,11 +204,9 @@
         }
     }
 
-    function confirmAndSave() {
-        const val = document.getElementById('final-code').value;
-        const field = document.getElementById(targetId);
-        if (field) {
-            field.value = val;
+    function confirmToUI() {
+        if(activeInput) {
+            activeInput.value = document.getElementById('final-code').value;
             save(); refresh();
         }
         stopScanner();
@@ -202,12 +218,12 @@
     }
 
     function resetScanner() {
-        if (html5QrCode) html5QrCode.resume();
+        if(html5QrCode) html5QrCode.resume();
         changeStep(1);
     }
 
     function stopScanner() {
-        if (html5QrCode) html5QrCode.stop();
+        if(html5QrCode) html5QrCode.stop();
         document.getElementById('scanner-overlay').style.display = 'none';
     }
 
@@ -228,10 +244,13 @@
 
     function save() {
         const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
-            id: c.dataset.id, date: c.querySelector('.d-date').value,
-            item: c.querySelector('.d-item').value, ref: c.querySelector('.d-ref').value,
-            price: c.querySelector('.d-price').value, disc: c.querySelector('.d-disc').value,
-            gccode: c.querySelector('.d-gccode').value, redeemed: c.querySelector('.d-redeemed').value
+            date: c.querySelector('.d-date').value,
+            item: c.querySelector('.d-item').value, 
+            ref: c.querySelector('.d-ref').value,
+            price: c.querySelector('.d-price').value, 
+            disc: c.querySelector('.d-disc').value,
+            gc: c.querySelector('.d-gc').value, 
+            status: c.querySelector('.d-status').value
         }));
         localStorage.setItem(DB_KEY, JSON.stringify(list));
     }
@@ -240,17 +259,12 @@
         const data = localStorage.getItem(DB_KEY);
         const blob = new Blob([data], { type: 'application/json' });
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `Backup.json`;
-        a.click();
+        a.href = URL.createObjectURL(blob); a.download = `Tracker_Backup.json`; a.click();
     }
 
     function importData(event) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-            localStorage.setItem(DB_KEY, e.target.result);
-            location.reload();
-        };
+        reader.onload = (e) => { localStorage.setItem(DB_KEY, e.target.result); location.reload(); };
         reader.readAsText(event.target.files[0]);
     }
 
