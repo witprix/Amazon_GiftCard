@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Restored & Fixed</title>
+    <title>Gift Card Tracker - Fixed UI Persistence</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -17,7 +17,7 @@
 
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
         .item-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .btn-del { position: absolute; top: -10px; right: -10px; background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: none; color: var(--danger); z-index: 5; }
+        .btn-del { position: absolute; top: -10px; right: -10px; background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: none; color: var(--danger); z-index: 5; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
         .full-width { grid-column: span 2; }
         label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block; }
@@ -30,19 +30,22 @@
 
         /* SCANNER OVERLAY */
         #scanner-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; flex-direction: column; }
-        #reader { width: 100%; flex-grow: 1; background: #000; position: relative; }
+        #reader-container { width: 100%; flex-grow: 1; background: #000; position: relative; overflow: hidden; }
+        #reader { width: 100%; height: 100%; }
         
-        .scan-window { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); border: 2.5px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 10; pointer-events: none; }
+        /* The UI layer that never gets deleted */
+        #scanner-ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+        .scan-window { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); border: 2.5px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); }
         .rect-box { width: 280px; height: 110px; }
         .square-box { width: 240px; height: 240px; }
 
-        .scanner-footer { background: #fff; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 12px; border-radius: 24px 24px 0 0; z-index: 100; }
-        .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 10px; }
+        .scanner-footer { background: #fff; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 15px; border-radius: 24px 24px 0 0; z-index: 100; pointer-events: auto; }
+        .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 12px; }
         .active-step { display: flex; }
         
         .preview-container { width: 100%; max-width: 280px; height: 150px; overflow: hidden; border-radius: 8px; border: 2px solid var(--primary); background: #000; display: flex; align-items: center; justify-content: center; }
         #captured-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .result-box { width: 100%; text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); padding: 12px; background: #f1f5f9; border-radius: 10px; border: none; box-sizing: border-box; }
+        .result-box { width: 100%; text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); padding: 14px; background: #f1f5f9; border-radius: 12px; border: none; box-sizing: border-box; }
 
         .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 90; }
         .btn-add-main { background: var(--primary); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(66,133,244,0.3); margin-top: -35px; border: 4px solid white; }
@@ -61,33 +64,37 @@
 <div class="container" id="expenseList"></div>
 
 <div id="scanner-overlay">
-    <div id="reader">
-        <div id="scan-window" class="scan-window"></div>
+    <div id="reader-container">
+        <div id="reader"></div>
+        
+        <div id="scanner-ui-layer">
+            <div id="scan-window" class="scan-window"></div>
+        </div>
     </div>
     
     <div class="scanner-footer">
         <div id="step-1" class="scan-step active-step">
-            <span id="scan-hint" style="font-weight: 700; color: #1e293b;">Center Code...</span>
-            <div id="btn-snap" onclick="manualSnap()" style="width:60px; height:60px; background:var(--primary); border-radius:50%; display:none; align-items:center; justify-content:center; color:white;">
+            <span id="scan-hint" style="font-weight: 700; color: #1e293b;">Initializing...</span>
+            <div id="btn-snap" onclick="manualSnap()" style="width:64px; height:64px; background:var(--primary); border-radius:50%; display:none; align-items:center; justify-content:center; color:white; box-shadow: 0 4px 10px rgba(66,133,244,0.4);">
                 <i class="material-icons-round" style="font-size:32px">photo_camera</i>
             </div>
-            <button onclick="stopScanner()" style="background:#f1f5f9; border:none; color:#4b5563; padding:10px 24px; border-radius:20px; font-weight:bold;">CLOSE</button>
+            <button onclick="stopScanner()" style="background:#fee2e2; border:none; color:var(--danger); padding:12px 30px; border-radius:30px; font-weight:800; font-size:14px;">CLOSE CAMERA</button>
         </div>
 
         <div id="step-2" class="scan-step">
             <span style="font-weight: 700;">Captured Preview</span>
             <div class="preview-container"><canvas id="hidden-canvas" style="display:none;"></canvas><img id="captured-img" src=""></div>
             <div style="display:flex; gap:10px; width:100%;">
-                <button onclick="processPreview()" style="background:var(--primary); color:white; flex:2; border:none; padding:14px; border-radius:30px; font-weight:bold;">PROCESS</button>
+                <button onclick="processPreview()" style="background:var(--primary); color:white; flex:2; border:none; padding:16px; border-radius:30px; font-weight:bold;">PROCESS CODE</button>
                 <button onclick="retakePhoto()" style="background:#f1f5f9; flex:1; border:none; border-radius:30px;"><i class="material-icons-round">refresh</i></button>
             </div>
         </div>
 
         <div id="step-3" class="scan-step">
-            <span style="font-weight: 700;">Confirm Data</span>
+            <span style="font-weight: 700;">Confirm Extracted Data</span>
             <input type="text" id="final-code" class="result-box">
-            <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:14px; border-radius:30px; font-weight:bold;">SAVE</button>
-            <button onclick="retakePhoto()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE</button>
+            <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:16px; border-radius:30px; font-weight:bold;">CONFIRM & SAVE</button>
+            <button onclick="retakePhoto()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE SCAN</button>
         </div>
     </div>
 </div>
@@ -100,7 +107,7 @@
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_Final_Fix_V3";
+    const DB_KEY = "Tracker_Persistent_V4";
     let html5QrCode = null, activeInput = null, currentMode = '', worker = null, tempScannedText = "";
 
     async function init() {
@@ -127,7 +134,7 @@
             <div class="full-width"><label>Gift Code (OCR)</label><div class="scan-group"><input type="text" class="d-gc" value="${data.gc || ''}"><div class="btn-icon-scan" onclick="startScan(this, 'gc')"><i class="material-icons-round">photo_camera</i></div></div></div>
             <div class="full-width"><label>Activation (QR)</label><div class="scan-group"><input type="text" class="d-act" value="${data.act || ''}"><div class="btn-icon-scan" onclick="startScan(this, 'act')"><i class="material-icons-round">qr_code_2</i></div><div class="btn-sms" onclick="sendSMS(this)"><i class="material-icons-round">sms</i></div></div></div>
             <div><label>Disc %</label><input type="number" class="d-disc price-input" value="${data.disc || ''}" oninput="save(); refresh();"></div>
-            <div><label>Net (₹)</label><input type="text" class="d-net price-input" readonly><span class="savings-badge d-save">Save: ₹0.00</span></div>
+            <div><label>Net (₹)</label><input type="text" class="d-net price-input" readonly><span class="savings-badge d-save" style="font-size:11px; font-weight:bold; color:var(--success); margin-top:4px; display:block;">Save: ₹0.00</span></div>
             <div><label>Redeemed</label><select class="d-status price-input" onchange="save();"><option ${data.status=='No'?'selected':''}>No</option><option ${data.status=='Yes'?'selected':''}>Yes</option></select></div>
         `;
         document.getElementById('expenseList').appendChild(div);
@@ -140,7 +147,8 @@
             html5QrCode.clear();
             html5QrCode = null;
         }
-        document.getElementById('reader').innerHTML = '<div id="scan-window" class="scan-window"></div>';
+        // Only clear the video container, not the UI layer
+        document.getElementById('reader').innerHTML = '';
     }
 
     async function startScan(btn, mode) {
@@ -160,27 +168,26 @@
 
         if (mode === 'act') {
             win.className = "scan-window square-box";
-            hint.innerText = "Point at QR Code";
+            hint.innerText = "Align QR Code";
             snap.style.display = 'none';
             config.qrbox = { width: 240, height: 240 };
         } else {
             win.className = "scan-window rect-box";
-            hint.innerText = (mode === 'gc') ? "Focus Code & Snap" : "Focus Barcode";
+            hint.innerText = (mode === 'gc') ? "Focus Code & Snap" : "Align Barcode";
             snap.style.display = (mode === 'gc') ? 'flex' : 'none';
             config.qrbox = { width: 280, height: 110 };
         }
 
         html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start({ facingMode: "environment" }, config, (txt) => {
-            // Auto-scan Logic for Barcode (Ref) and QR (Act)
             if (mode !== 'gc') {
                 tempScannedText = txt;
                 document.getElementById('final-code').value = txt;
                 html5QrCode.pause();
-                captureFrame(); // Take the preview picture
-                changeStep(2);  // Go to Preview
+                captureFrame();
+                changeStep(2);
             }
-        }).catch(err => console.error(err));
+        }).catch(err => alert("Camera Error: Check Permissions"));
     }
 
     function manualSnap() {
@@ -210,12 +217,11 @@
     async function processPreview() {
         const final = document.getElementById('final-code');
         if (currentMode === 'gc') {
-            final.value = "Reading Code...";
+            final.value = "Reading Text...";
             changeStep(3);
             const { data: { text } } = await worker.recognize(document.getElementById('hidden-canvas'));
             final.value = text.replace(/[^A-Z0-9-]/gi, '').trim();
         } else {
-            // Ref and Act already have their text from the auto-scan
             final.value = tempScannedText;
             changeStep(3);
         }
