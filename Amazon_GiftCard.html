@@ -10,7 +10,6 @@
         :root { --primary: #4285F4; --success: #34A853; --bg: #f8fafc; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; }
         
-        /* Dashboard Header */
         .top-dash { position: sticky; top: 0; z-index: 100; background: #fff; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
         .inr-text { font-size: 1.5rem; font-weight: 800; color: var(--success); }
 
@@ -28,25 +27,26 @@
         #lens-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
         #reader { width: 100%; flex-grow: 1; position: relative; }
         
+        /* The "Validation Box" - Tightened for better accuracy */
         .lens-reticle { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 300px; height: 100px; border: 2px solid rgba(255,255,255,0.5); 
-            border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); z-index: 100;
+            width: 260px; height: 80px; border: 2px solid rgba(255,255,255,0.3); 
+            border-radius: 8px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 100;
         }
-        .lens-corner { position: absolute; width: 25px; height: 25px; border: 4px solid var(--primary); z-index: 101; border-radius: 4px; }
+        .lens-corner { position: absolute; width: 20px; height: 20px; border: 4px solid var(--primary); z-index: 101; }
         .tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
         .tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
         .bl { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
         .br { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
 
-        .lens-footer { background: #fff; padding: 25px; display: flex; flex-direction: column; align-items: center; border-radius: 24px 24px 0 0; }
-        .shutter-btn { width: 65px; height: 65px; background: #fff; border: 4px solid #dadce0; border-radius: 50%; padding: 4px; cursor: pointer; }
+        .lens-footer { background: #fff; padding: 20px; display: flex; flex-direction: column; align-items: center; border-radius: 20px 20px 0 0; }
+        .shutter-btn { width: 60px; height: 60px; background: #fff; border: 4px solid #dadce0; border-radius: 50%; padding: 4px; cursor: pointer; }
         .shutter-inner { width: 100%; height: 100%; background: var(--primary); border-radius: 50%; }
 
         .confirm-box { display: none; width: 100%; text-align: center; }
-        .result-input { width: 90%; font-size: 24px; font-weight: bold; text-align: center; padding: 12px; border: 2px solid var(--primary); border-radius: 12px; margin-bottom: 15px; color: var(--primary); }
+        .result-input { width: 90%; font-size: 22px; font-weight: bold; text-align: center; padding: 10px; border: 2px solid var(--primary); border-radius: 10px; margin-bottom: 15px; color: var(--primary); }
 
-        .btn-apply { background: var(--primary); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-weight: bold; width: 90%; cursor: pointer; }
+        .btn-apply { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 50px; font-weight: bold; width: 90%; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -69,19 +69,19 @@
         </div>
     </div>
     <div class="lens-footer">
-        <div id="lens-status" style="margin-bottom: 15px; font-weight: 600; color: #5f6368;">Align code inside corners</div>
+        <div id="lens-status" style="margin-bottom: 10px; font-size: 14px; font-weight: 600; color: #5f6368;">Align within corners</div>
         
         <div id="shutter-group">
-            <div class="shutter-btn" onclick="takeSnapshot()"><div class="shutter-inner"></div></div>
+            <div class="shutter-btn" onclick="processSelection()"><div class="shutter-inner"></div></div>
         </div>
 
         <div class="confirm-box" id="confirm-box">
             <input type="text" id="edit-result" class="result-input">
-            <button class="btn-apply" onclick="applyCode()">USE THIS CODE</button>
-            <button onclick="resetLens()" style="background:none; border:none; color:#5f6368; margin-top:15px; font-weight:bold; cursor:pointer;">Retake</button>
+            <button class="btn-apply" onclick="applyCode()">SAVE DATA</button>
+            <button onclick="resetLens()" style="background:none; border:none; color:#5f6368; margin-top:10px; font-weight:bold; cursor:pointer;">Retake</button>
         </div>
 
-        <button onclick="stopLens()" style="background:none; border:none; color:#999; margin-top: 15px; cursor:pointer;">Exit</button>
+        <button onclick="stopLens()" style="background:none; border:none; color:#999; margin-top: 10px; cursor:pointer;">Exit</button>
     </div>
 </div>
 
@@ -90,23 +90,23 @@
 </div>
 
 <script>
-    const DB_NAME = "LensTracker_v12";
+    const DB_NAME = "LensTracker_v14";
     let scanner = null;
     let targetInput = null;
+    let scanType = 'ocr'; // 'barcode' or 'ocr'
     let worker = null;
 
     async function init() {
         const saved = JSON.parse(localStorage.getItem(DB_NAME)) || [];
         const yf = document.getElementById('yearFilter');
         const cy = new Date().getFullYear();
+        yf.innerHTML = "";
         for(let i=cy-2; i<=cy+1; i++) {
             let o = document.createElement('option'); o.value = i; o.innerText = i;
             if(i === cy) o.selected = true; yf.appendChild(o);
         }
         if(saved.length === 0) addNew(); else saved.forEach(s => addNew(s));
         refresh();
-        
-        // Pre-load AI worker
         worker = await Tesseract.createWorker('eng');
     }
 
@@ -119,56 +119,67 @@
             <button style="position:absolute; top:10px; right:10px; border:none; background:none; color:red; cursor:pointer;" onclick="this.parentElement.remove(); save();">✕</button>
             <div><label>Date</label><input type="date" class="d-date" value="${data.date || ''}" onchange="save(); refresh();"></div>
             <div class="full-width"><label>Description</label><input type="text" class="d-item" value="${data.item || ''}" oninput="save();"></div>
-            <div><label>Ref ID</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="startLens(this)">📷</button></div></div>
+            <div><label>Ref ID (Barcode)</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="startLens(this, 'barcode')">📷</button></div></div>
             <div><label>Price (₹)</label><input type="number" class="d-price" value="${data.price || ''}" oninput="save(); refresh();"></div>
             <div><label>Disc %</label><input type="number" class="d-disc" value="${data.disc || ''}" oninput="save(); refresh();"></div>
-            <div><label>Gift Code</label><div class="scan-group"><input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();"><button class="btn-scan" onclick="startLens(this)">📷</button></div></div>
+            <div><label>Gift Code (OCR)</label><div class="scan-group"><input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();"><button class="btn-scan" onclick="startLens(this, 'ocr')">📷</button></div></div>
             <div><label>Redeemed</label><select class="d-status" onchange="save();"><option ${data.status=='No'?'selected':''}>No</option><option ${data.status=='Yes'?'selected':''}>Yes</option></select></div>
         `;
         document.getElementById('expenseList').appendChild(div);
     }
 
-    async function startLens(btn) {
+    async function startLens(btn, type) {
         targetInput = btn.parentElement.querySelector('input');
+        scanType = type;
         document.getElementById('lens-overlay').style.display = 'flex';
         resetLens();
+        
         if (!scanner) scanner = new Html5Qrcode("reader");
-        await scanner.start({ facingMode: "environment" }, { fps: 20 }, () => {});
+        
+        const config = { fps: 20, qrbox: { width: 260, height: 80 } };
+        
+        if (type === 'barcode') {
+            document.getElementById('lens-status').innerText = "Scanning Barcode...";
+            document.getElementById('shutter-group').style.display = 'none'; // Auto-scan for barcode
+            scanner.start({ facingMode: "environment" }, config, (decodedText) => {
+                document.getElementById('edit-result').value = decodedText;
+                showConfirmation();
+            });
+        } else {
+            document.getElementById('lens-status').innerText = "Align code & Tap Blue Button";
+            document.getElementById('shutter-group').style.display = 'block';
+            await scanner.start({ facingMode: "environment" }, { fps: 20 }, () => {});
+        }
     }
 
-    async function takeSnapshot() {
-        document.getElementById('lens-status').innerText = "Reading with AI...";
+    async function processSelection() {
+        document.getElementById('lens-status').innerText = "Processing Text...";
         const video = document.querySelector('video');
-        
-        // 1. Capture and Crop
         const canvas = document.createElement('canvas');
-        canvas.width = 800; canvas.height = 300;
+        canvas.width = 600; canvas.height = 200;
         const ctx = canvas.getContext('2d');
-        // Crop the center box area specifically
-        ctx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.4, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 800, 300);
+        
+        // Exact crop of the box area
+        ctx.drawImage(video, video.videoWidth*0.2, video.videoHeight*0.4, video.videoWidth*0.6, video.videoHeight*0.2, 0, 0, 600, 200);
 
-        // 2. IMAGE ENHANCEMENT (The "Lens" Secret)
-        const imgData = ctx.getImageData(0, 0, 800, 300);
+        // Sharpening for OCR
+        const imgData = ctx.getImageData(0, 0, 600, 200);
         for (let i = 0; i < imgData.data.length; i += 4) {
-            // Thresholding: Turn gray to pure black or pure white
             const v = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
-            const threshold = v > 120 ? 255 : 0;
-            imgData.data[i] = imgData.data[i+1] = imgData.data[i+2] = threshold;
+            const res = v > 125 ? 255 : 0;
+            imgData.data[i] = imgData.data[i+1] = imgData.data[i+2] = res;
         }
         ctx.putImageData(imgData, 0, 0);
 
-        // 3. OCR
-        try {
-            const { data: { text } } = await worker.recognize(canvas);
-            const clean = text.replace(/[^A-Z0-9-]/gi, '').trim();
-            
-            document.getElementById('edit-result').value = clean;
-            document.getElementById('shutter-group').style.display = 'none';
-            document.getElementById('confirm-box').style.display = 'block';
-            document.getElementById('lens-status').innerText = "Verify Detected Code";
-        } catch (e) {
-            document.getElementById('lens-status').innerText = "Failed. Try again.";
-        }
+        const { data: { text } } = await worker.recognize(canvas);
+        document.getElementById('edit-result').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
+        showConfirmation();
+    }
+
+    function showConfirmation() {
+        document.getElementById('shutter-group').style.display = 'none';
+        document.getElementById('confirm-box').style.display = 'block';
+        document.getElementById('lens-status').innerText = "Confirm Result";
     }
 
     function applyCode() {
@@ -178,13 +189,13 @@
     }
 
     function resetLens() {
-        document.getElementById('shutter-group').style.display = 'block';
+        if (scanType === 'ocr') document.getElementById('shutter-group').style.display = 'block';
         document.getElementById('confirm-box').style.display = 'none';
-        document.getElementById('lens-status').innerText = "Align code inside corners";
+        document.getElementById('lens-status').innerText = scanType === 'barcode' ? "Scanning Barcode..." : "Align within corners";
     }
 
     async function stopLens() {
-        if (scanner) await scanner.stop();
+        if (scanner && scanner.isScanning) await scanner.stop();
         document.getElementById('lens-overlay').style.display = 'none';
     }
 
