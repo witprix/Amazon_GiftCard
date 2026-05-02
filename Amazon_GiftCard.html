@@ -3,59 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker Pro</title>
+    <title>Master Gift Card Tracker Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root { --primary: #2563eb; --secondary: #0f172a; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; }
         
-        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        /* Dashboard Styling */
+        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .inr-text { font-size: 1.5rem; font-weight: 800; color: var(--success); }
 
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
         .item-card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         
+        .btn-del { position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; }
+        
         .full-width { grid-column: span 2; }
         label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 5px; }
-        input, select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+        input, select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; }
         
         .scan-group { display: flex; gap: 6px; }
-        .btn-scan { background: var(--secondary); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; }
+        .btn-scan { background: var(--secondary); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; font-size: 16px; }
 
-        /* SCANNER OVERLAY */
+        /* --- Full-Screen Scanner UI --- */
         #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
-        #reader { width: 100%; flex-grow: 1; position: relative; }
+        #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
         
-        /* The Visual "Hole" */
+        /* Visual Selector Box (The Pointer) */
         .scan-region-highlight {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 300px; height: 100px; border: 4px solid var(--success);
+            width: 300px; height: 120px; border: 4px solid var(--success);
             border-radius: 8px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7);
             z-index: 100; pointer-events: none;
         }
 
-        /* Preview Image (Shows after capture) */
+        /* Image Preview (Frozen Frame) */
         #snap-preview {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             object-fit: contain; display: none; background: black; z-index: 150;
         }
 
         .scanner-footer { background: #000; padding: 25px; display: flex; flex-direction: column; align-items: center; gap: 15px; color: white; z-index: 200; }
-        .btn-action { width: 80%; padding: 15px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .btn-action { width: 85%; padding: 16px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
+        
         .btn-capture { background: var(--success); color: white; }
-        .btn-save { background: var(--primary); color: white; display: none; }
-        .btn-retake { background: #444; color: white; display: none; }
-        .btn-cancel { background: none; color: #999; font-size: 12px; margin-top: 10px; }
+        .btn-confirm { background: var(--primary); color: white; }
+        .btn-retake { background: #444; color: white; margin-top: 5px; }
+        .btn-cancel { background: transparent; color: #999; font-size: 13px; margin-top: 10px; border: none; cursor: pointer; }
+
+        /* Bottom Actions */
+        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; justify-content: space-around; border-top: 1px solid #e2e8f0; z-index: 100; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 12px 40px; border-radius: 50px; font-weight: bold; font-size: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="top-dash">
-    <div><div style="font-size: 10px; font-weight: bold; color: #94a3b8;">YEARLY TOTAL</div><div class="inr-text" id="totalINR">₹0.00</div></div>
+    <div><div style="font-size: 10px; font-weight: bold; color: #94a3b8;">YEARLY NET TOTAL</div><div class="inr-text" id="totalINR">₹0.00</div></div>
 </div>
 
-<div class="container" id="expenseList"></div>
+<div class="container">
+    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <select id="yearFilter" onchange="refresh()" style="width: auto; font-weight: bold;"></select>
+    </div>
+    <div id="expenseList"></div>
+</div>
 
 <div id="scanner-overlay">
     <div id="reader">
@@ -63,34 +76,45 @@
         <canvas id="snap-preview"></canvas>
     </div>
     <div class="scanner-footer">
-        <div id="scan-status">Align alphanumeric code in box</div>
+        <div id="scan-status" style="font-size: 14px;">Align code inside the box</div>
         
-        <button id="capBtn" class="btn-action btn-capture" onclick="captureImage()">📷 CAPTURE CODE</button>
+        <button id="capBtn" class="btn-action btn-capture" onclick="captureAndProcess()">📷 CAPTURE & SCAN</button>
         
         <div id="confirmGroup" style="display:none; width: 100%; flex-direction: column; align-items: center; gap: 10px;">
-            <div style="font-size: 12px; color: #aaa;">Is this code correct?</div>
-            <div id="detected-text" style="font-size: 20px; font-weight: bold; color: var(--success); margin-bottom: 10px;"></div>
-            <button class="btn-action btn-save" id="saveBtn" onclick="commitScan()">✅ SAVE CODE</button>
-            <button class="btn-action btn-retake" id="retakeBtn" onclick="retake()">🔄 RETAKE</button>
+            <input type="text" id="edit-result" style="width: 85%; text-align: center; font-size: 22px; font-weight: bold; color: var(--success); background: #222; border: 1px solid #444; padding: 15px;">
+            <button class="btn-action btn-confirm" onclick="commitScan()">✅ SAVE & USE</button>
+            <button class="btn-action btn-retake" onclick="resetScannerUI()">🔄 RETAKE</button>
         </div>
 
-        <button class="btn-cancel" onclick="stopScanner()">CANCEL</button>
+        <button class="btn-cancel" onclick="stopScanner()">EXIT SCANNER</button>
     </div>
 </div>
 
-<div class="bottom-actions" style="position:fixed; bottom:0; width:100%; background:white; padding:15px; display:flex; justify-content:center;">
-    <button onclick="addNew()" class="btn-main" style="background:var(--primary); color:white; border:none; padding:12px 40px; border-radius:50px; font-weight:bold;">＋ Add New Entry</button>
+<div class="bottom-actions">
+    <button onclick="document.getElementById('importFile').click()" style="background:none; border:none; color:#64748b; font-weight:bold; cursor:pointer;">Import</button>
+    <button onclick="addNew()" class="btn-main">＋ Add Entry</button>
+    <button onclick="exportData()" style="background:none; border:none; color:#64748b; font-weight:bold; cursor:pointer;">Export</button>
 </div>
 
+<input type="file" id="importFile" hidden onchange="importData(event)">
+
 <script>
-    const DB_KEY = "Amazon_Tracker_V12";
+    const DB_KEY = "GiftCard_Tracker_V15_Final";
     let html5QrCode = null;
     let currentInput = null;
-    let tempDetectedText = "";
 
     function init() {
         const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         document.getElementById('expenseList').innerHTML = "";
+        
+        const yf = document.getElementById('yearFilter');
+        const cy = new Date().getFullYear();
+        yf.innerHTML = "";
+        for(let i=cy-2; i<=cy+2; i++) {
+            let o = document.createElement('option'); o.value = i; o.innerText = i;
+            if(i === cy) o.selected = true; yf.appendChild(o);
+        }
+
         if(saved.length === 0) addNew(); else saved.forEach(s => addNew(s));
         refresh();
     }
@@ -101,13 +125,23 @@
         div.className = "item-card";
         div.dataset.id = id;
         div.innerHTML = `
-            <button class="btn-del" onclick="this.parentElement.remove(); save(); refresh();">✕</button>
+            <button class="btn-del" onclick="deleteRecord(${id})">✕</button>
+            <div><label>Date</label><input type="date" class="d-date" value="${data.date || ''}" onchange="save(); refresh();"></div>
             <div class="full-width"><label>Description</label><input type="text" class="d-item" value="${data.item || ''}" oninput="save();"></div>
+            <div><label>Ref ID / Barcode</label><div class="scan-group">
+                <input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();">
+                <button class="btn-scan" onclick="startScanner(this)">📷</button>
+            </div></div>
             <div><label>Price (₹)</label><input type="number" class="d-price" value="${data.price || ''}" oninput="save(); refresh();"></div>
-            <div><label>Gift Code</label><div class="scan-group">
+            <div><label>Disc %</label><input type="number" class="d-disc" value="${data.disc || ''}" oninput="save(); refresh();"></div>
+            <div><label>Gift Card Code</label><div class="scan-group">
                 <input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();">
                 <button class="btn-scan" onclick="startScanner(this)">📷</button>
             </div></div>
+            <div><label>Redeemed Status</label><select class="d-redeemed" onchange="save();">
+                <option value="No" ${data.redeemed === 'No' ? 'selected' : ''}>No</option>
+                <option value="Yes" ${data.redeemed === 'Yes' ? 'selected' : ''}>Yes</option>
+            </select></div>
         `;
         document.getElementById('expenseList').appendChild(div);
     }
@@ -115,70 +149,69 @@
     async function startScanner(btn) {
         currentInput = btn.parentElement.querySelector('input');
         document.getElementById('scanner-overlay').style.display = 'flex';
-        retake(); // Reset UI state
+        resetScannerUI();
 
         if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
 
         try {
             await html5QrCode.start(
                 { facingMode: "environment" }, 
-                { fps: 15, videoConstraints: { width: { ideal: 4096 } } },
-                () => {} // Not using live barcode success
+                { fps: 20, videoConstraints: { width: { ideal: 4096 }, height: { ideal: 2160 } } },
+                () => {} // Manual capture logic
             );
-        } catch (err) { stopScanner(); }
+        } catch (err) { alert("Camera failed. Use HTTPS."); stopScanner(); }
     }
 
-    async function captureImage() {
+    async function captureAndProcess() {
         const status = document.getElementById('scan-status');
-        status.innerText = "Processing Text...";
+        status.innerText = "Analyzing text... Please wait.";
         
         const video = document.querySelector('video');
         const canvas = document.getElementById('snap-preview');
         const ctx = canvas.getContext('2d');
 
-        // Match preview size to display
+        // Freeze frame logic
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0);
-        
-        // Show the frozen image
         canvas.style.display = 'block';
         
-        // Crop the "Box" area for OCR (Middle 60% width, 20% height)
+        // Extract the "Box" area for higher OCR accuracy
         const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = 800; cropCanvas.height = 300;
+        cropCanvas.width = 1200; cropCanvas.height = 480;
         const cropCtx = cropCanvas.getContext('2d');
-        cropCtx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.4, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 800, 300);
+        
+        // Crop coordinates (middle section of the camera feed)
+        cropCtx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.4, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 1200, 480);
 
         try {
             const { data: { text } } = await Tesseract.recognize(cropCanvas, 'eng');
-            tempDetectedText = text.replace(/[^A-Z0-9-]/gi, '').trim();
+            const resultText = text.replace(/[^A-Z0-9-]/gi, '').trim();
             
-            document.getElementById('detected-text').innerText = tempDetectedText || "No text found";
+            document.getElementById('edit-result').value = resultText || "NOT FOUND";
             document.getElementById('capBtn').style.display = 'none';
             document.getElementById('confirmGroup').style.display = 'flex';
-            document.getElementById('saveBtn').style.display = 'block';
-            document.getElementById('retakeBtn').style.display = 'block';
-            status.innerText = "Confirm the result";
+            status.innerText = "Check and Edit if necessary";
         } catch (e) {
-            status.innerText = "Error reading. Try again.";
-            retake();
+            status.innerText = "Error. Try again.";
+            resetScannerUI();
         }
     }
 
     function commitScan() {
-        if(tempDetectedText) {
-            currentInput.value = tempDetectedText;
+        const val = document.getElementById('edit-result').value;
+        if(val && val !== "NOT FOUND") {
+            currentInput.value = val;
             stopScanner();
             save();
         }
     }
 
-    function retake() {
+    function resetScannerUI() {
         document.getElementById('snap-preview').style.display = 'none';
         document.getElementById('capBtn').style.display = 'block';
         document.getElementById('confirmGroup').style.display = 'none';
-        document.getElementById('scan-status').innerText = "Align alphanumeric code in box";
+        document.getElementById('scan-status').innerText = "Align code inside the box";
     }
 
     async function stopScanner() {
@@ -186,20 +219,61 @@
         document.getElementById('scanner-overlay').style.display = 'none';
     }
 
+    function refresh() {
+        const year = document.getElementById('yearFilter').value;
+        let total = 0;
+        document.querySelectorAll('.item-card').forEach(card => {
+            const dt = card.querySelector('.d-date').value;
+            const p = parseFloat(card.querySelector('.d-price').value) || 0;
+            const d = parseFloat(card.querySelector('.d-disc').value) || 0;
+            if(!dt || dt.startsWith(year)) {
+                total += (p - (p * (d / 100)));
+                card.style.display = "grid";
+            } else { card.style.display = "none"; }
+        });
+        document.getElementById('totalINR').innerText = `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+    }
+
     function save() {
         const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
+            id: c.dataset.id,
+            date: c.querySelector('.d-date').value,
             item: c.querySelector('.d-item').value,
+            ref: c.querySelector('.d-ref').value,
             price: c.querySelector('.d-price').value,
+            disc: c.querySelector('.d-disc').value,
             gccode: c.querySelector('.d-gccode').value,
+            redeemed: c.querySelector('.d-redeemed').value
         }));
         localStorage.setItem(DB_KEY, JSON.stringify(list));
     }
 
-    function refresh() {
-        let total = 0;
-        document.querySelectorAll('.d-price').forEach(p => total += (parseFloat(p.value) || 0));
-        document.getElementById('totalINR').innerText = `₹${total.toLocaleString('en-IN')}`;
+    function deleteRecord(id) {
+        if(confirm("Permanently delete this entry?")) {
+            document.querySelector(`[data-id="${id}"]`).remove();
+            save(); refresh();
+        }
+    }
+
+    function exportData() {
+        const data = localStorage.getItem(DB_KEY);
+        const blob = new Blob([data], {type: 'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `GC_Tracker_Export_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+    }
+
+    function importData(e) {
+        const reader = new FileReader();
+        reader.onload = () => { 
+            localStorage.setItem(DB_KEY, reader.result); 
+            init(); 
+        };
+        reader.readAsText(e.target.files[0]);
     }
 
     window.onload = init;
-</
+</script>
+</body>
+</html>
