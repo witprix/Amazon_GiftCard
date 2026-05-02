@@ -3,43 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Gift Card Tracker Pro</title>
+    <title>Gift Card Tracker Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root { --primary: #2563eb; --secondary: #0f172a; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; }
+        
         .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
         .inr-text { font-size: 1.5rem; font-weight: 800; color: var(--success); }
+
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
         .item-card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
         .btn-del { position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; z-index: 10; }
         .full-width { grid-column: span 2; }
         label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 5px; }
         input, select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; }
+        
         .scan-group { display: flex; gap: 6px; }
-        .btn-scan { background: var(--secondary); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; }
+        .btn-scan { background: var(--secondary); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; font-size: 16px; }
 
-        /* SCANNER UI */
+        /* --- SCANNER UI FIXES --- */
         #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
         #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
-        .scan-window { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; height: 100px; border: 4px solid var(--success); border-radius: 8px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); z-index: 100; pointer-events: none; }
+        
+        /* The Visual Pointer Box */
+        .scan-window { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 300px; height: 100px; border: 4px solid var(--success); 
+            border-radius: 8px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); 
+            z-index: 100; pointer-events: none; 
+        }
+        
         #snap-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: none; background: black; z-index: 150; }
+
         .scanner-footer { background: #000; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; color: white; z-index: 200; }
         .btn-action { width: 85%; padding: 15px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
         .btn-capture { background: var(--success); color: white; }
         .btn-confirm { background: var(--primary); color: white; }
         .btn-retake { background: #444; color: white; }
-        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; justify-content: center; border-top: 1px solid #e2e8f0; z-index: 100; }
+
+        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; justify-content: space-around; border-top: 1px solid #e2e8f0; z-index: 100; }
     </style>
 </head>
 <body>
 
 <div class="top-dash">
-    <div><div style="font-size: 10px; font-weight: bold; color: #94a3b8;">YEARLY TOTAL</div><div class="inr-text" id="totalINR">₹0.00</div></div>
+    <div><div style="font-size: 10px; font-weight: bold; color: #94a3b8;">YEARLY NET TOTAL</div><div class="inr-text" id="totalINR">₹0.00</div></div>
 </div>
 
-<div class="container" id="expenseList"></div>
+<div class="container">
+    <select id="yearFilter" onchange="refresh()" style="width: auto; margin-bottom: 15px; font-weight: bold;"></select>
+    <div id="expenseList"></div>
+</div>
 
 <div id="scanner-overlay">
     <div id="reader">
@@ -47,27 +64,33 @@
         <canvas id="snap-preview"></canvas>
     </div>
     <div class="scanner-footer">
-        <div id="scan-status" style="margin-bottom: 5px; font-weight: bold;">Loading Back Camera...</div>
-        <div style="width: 80%; display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-            <span style="font-size: 12px;">ZOOM</span>
-            <input type="range" id="zoomCtrl" min="1" max="5" step="0.1" value="1" style="flex-grow: 1;">
+        <div id="scan-status" style="font-weight: bold;">Align code & Tap Capture</div>
+        <div style="width: 80%; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size:10px">ZOOM</span>
+            <input type="range" id="zoomCtrl" min="1" max="5" step="0.1" value="1" style="flex-grow:1">
         </div>
-        <button id="capBtn" class="btn-action btn-capture" onclick="captureAndScan()">📷 CAPTURE & READ</button>
+        
+        <button id="capBtn" class="btn-action btn-capture" onclick="captureAndScan()">📷 CAPTURE</button>
+        
         <div id="confirmGroup" style="display:none; width: 100%; flex-direction: column; align-items: center; gap: 10px;">
-            <input type="text" id="edit-result" style="width: 85%; text-align: center; font-size: 20px; padding: 12px; background: #222; color: #10b981; border: 1px solid #444;">
+            <input type="text" id="edit-result" style="width: 85%; text-align: center; font-size: 20px; padding: 10px; background: #222; color: #10b981; border: 1px solid #444;">
             <button class="btn-action btn-confirm" onclick="commitScan()">✅ SAVE CODE</button>
             <button class="btn-action btn-retake" onclick="resetScanner()">🔄 RETAKE</button>
         </div>
-        <button onclick="stopScanner()" style="background:none; border:none; color:#999; margin-top: 10px;">CANCEL</button>
+        <button onclick="stopScanner()" style="background:none; border:none; color:#999; margin-top: 5px;">CANCEL</button>
     </div>
 </div>
 
 <div class="bottom-actions">
-    <button onclick="addNew()" style="background:var(--primary); color:white; border:none; padding:12px 40px; border-radius:50px; font-weight:bold;">＋ Add New Entry</button>
+    <button onclick="document.getElementById('importFile').click()" style="background:none; border:none; color:#64748b; font-weight:bold;">Import</button>
+    <button onclick="addNew()" style="background:var(--primary); color:white; border:none; padding:12px 30px; border-radius:50px; font-weight:bold;">＋ Add Entry</button>
+    <button onclick="exportData()" style="background:none; border:none; color:#64748b; font-weight:bold;">Export</button>
 </div>
 
+<input type="file" id="importFile" hidden onchange="importData(event)">
+
 <script>
-    const DB_KEY = "Tracker_V16_Final";
+    const DB_KEY = "Amazon_Tracker_V11_Stable";
     let html5QrCode = null;
     let currentInput = null;
     let videoTrack = null;
@@ -75,6 +98,15 @@
     function init() {
         const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         document.getElementById('expenseList').innerHTML = "";
+        
+        const yf = document.getElementById('yearFilter');
+        const cy = new Date().getFullYear();
+        yf.innerHTML = "";
+        for(let i=cy-2; i<=cy+2; i++) {
+            let o = document.createElement('option'); o.value = i; o.innerText = i;
+            if(i === cy) o.selected = true; yf.appendChild(o);
+        }
+
         if(saved.length === 0) addNew(); else saved.forEach(s => addNew(s));
         refresh();
     }
@@ -86,12 +118,16 @@
         div.dataset.id = id;
         div.innerHTML = `
             <button class="btn-del" onclick="this.parentElement.remove(); save(); refresh();">✕</button>
+            <div><label>Date</label><input type="date" class="d-date" value="${data.date || ''}" onchange="save(); refresh();"></div>
             <div class="full-width"><label>Description</label><input type="text" class="d-item" value="${data.item || ''}" oninput="save();"></div>
+            <div><label>Ref ID</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="openScanner(this)">📷</button></div></div>
             <div><label>Price (₹)</label><input type="number" class="d-price" value="${data.price || ''}" oninput="save(); refresh();"></div>
-            <div><label>Gift Code</label><div class="scan-group">
-                <input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();">
-                <button class="btn-scan" onclick="openScanner(this)">📷</button>
-            </div></div>
+            <div><label>Disc %</label><input type="number" class="d-disc" value="${data.disc || ''}" oninput="save(); refresh();"></div>
+            <div><label>Gift Code</label><div class="scan-group"><input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();"><button class="btn-scan" onclick="openScanner(this)">📷</button></div></div>
+            <div><label>Redeemed?</label><select class="d-redeemed" onchange="save();">
+                <option value="No" ${data.redeemed === 'No' ? 'selected' : ''}>No</option>
+                <option value="Yes" ${data.redeemed === 'Yes' ? 'selected' : ''}>Yes</option>
+            </select></div>
         `;
         document.getElementById('expenseList').appendChild(div);
     }
@@ -104,32 +140,24 @@
         if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
 
         try {
-            // FORCE BACK CAMERA
-            await html5QrCode.start(
-                { facingMode: { exact: "environment" } }, 
-                { fps: 20, videoConstraints: { width: { ideal: 1920 }, height: { ideal: 1080 } } },
-                () => {}
-            );
-            
-            videoTrack = html5QrCode.getRunningTrack();
-            const caps = videoTrack.getCapabilities();
-            const zoom = document.getElementById('zoomCtrl');
-            if(caps.zoom) {
-                zoom.min = caps.zoom.min; zoom.max = caps.zoom.max;
-                zoom.oninput = () => videoTrack.applyConstraints({ advanced: [{ zoom: zoom.value }] });
-            }
-            document.getElementById('scan-status').innerText = "Back Camera Active - Point & Shoot";
+            // TRY FORCING BACK CAMERA FIRST
+            await html5QrCode.start({ facingMode: { exact: "environment" } }, { fps: 20 }, () => {});
         } catch (e) {
-            // Fallback for some browsers that don't like 'exact'
+            // FALLBACK TO ANY BACK CAMERA
             await html5QrCode.start({ facingMode: "environment" }, { fps: 20 }, () => {});
-            document.getElementById('scan-status').innerText = "Camera Active";
+        }
+
+        videoTrack = html5QrCode.getRunningTrack();
+        const caps = videoTrack.getCapabilities();
+        const zoom = document.getElementById('zoomCtrl');
+        if(caps.zoom) {
+            zoom.min = caps.zoom.min; zoom.max = caps.zoom.max;
+            zoom.oninput = () => videoTrack.applyConstraints({ advanced: [{ zoom: zoom.value }] });
         }
     }
 
     async function captureAndScan() {
-        const status = document.getElementById('scan-status');
-        status.innerText = "Analyzing Text... Please Wait";
-        
+        document.getElementById('scan-status').innerText = "Processing Text...";
         const video = document.querySelector('video');
         const canvas = document.getElementById('snap-preview');
         const ctx = canvas.getContext('2d');
@@ -138,7 +166,7 @@
         ctx.drawImage(video, 0, 0);
         canvas.style.display = 'block';
         
-        // CROP AREA (Center Box)
+        // CROP CENTER AREA FOR OCR
         const crop = document.createElement('canvas');
         crop.width = 800; crop.height = 300;
         const cropCtx = crop.getContext('2d');
@@ -146,12 +174,11 @@
 
         try {
             const { data: { text } } = await Tesseract.recognize(crop, 'eng');
-            const clean = text.replace(/[^A-Z0-9-]/gi, '').trim();
-            document.getElementById('edit-result').value = clean || "RETAKE REQUIRED";
+            document.getElementById('edit-result').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
             document.getElementById('capBtn').style.display = 'none';
             document.getElementById('confirmGroup').style.display = 'flex';
-            status.innerText = "Check Result";
-        } catch (e) { status.innerText = "OCR Failed. Try again."; resetScanner(); }
+            document.getElementById('scan-status').innerText = "Check the code below";
+        } catch (e) { resetScanner(); }
     }
 
     function commitScan() {
@@ -163,7 +190,7 @@
         document.getElementById('snap-preview').style.display = 'none';
         document.getElementById('capBtn').style.display = 'block';
         document.getElementById('confirmGroup').style.display = 'none';
-        document.getElementById('scan-status').innerText = "Align code inside the box";
+        document.getElementById('scan-status').innerText = "Align code & Tap Capture";
     }
 
     async function stopScanner() {
@@ -171,18 +198,40 @@
         document.getElementById('scanner-overlay').style.display = 'none';
     }
 
+    function refresh() {
+        const year = document.getElementById('yearFilter').value;
+        let total = 0;
+        document.querySelectorAll('.item-card').forEach(card => {
+            const dt = card.querySelector('.d-date').value;
+            const p = parseFloat(card.querySelector('.d-price').value) || 0;
+            const d = parseFloat(card.querySelector('.d-disc').value) || 0;
+            if(!dt || dt.startsWith(year)) {
+                total += (p - (p * (d / 100)));
+                card.style.display = "grid";
+            } else { card.style.display = "none"; }
+        });
+        document.getElementById('totalINR').innerText = `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+    }
+
     function save() {
         const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
-            item: c.querySelector('.d-item').value,
-            price: c.querySelector('.d-price').value,
-            gccode: c.querySelector('.d-gccode').value,
+            id: c.dataset.id, date: c.querySelector('.d-date').value,
+            item: c.querySelector('.d-item').value, ref: c.querySelector('.d-ref').value,
+            price: c.querySelector('.d-price').value, disc: c.querySelector('.d-disc').value,
+            gccode: c.querySelector('.d-gccode').value, redeemed: c.querySelector('.d-redeemed').value
         }));
         localStorage.setItem(DB_KEY, JSON.stringify(list));
     }
 
-    function refresh() {
-        let t = 0; document.querySelectorAll('.d-price').forEach(p => t += (parseFloat(p.value) || 0));
-        document.getElementById('totalINR').innerText = `₹${t.toLocaleString('en-IN')}`;
+    function exportData() {
+        const blob = new Blob([localStorage.getItem(DB_KEY)], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `GC_Tracker_Export.json`; a.click();
+    }
+
+    function importData(e) {
+        const r = new FileReader(); r.onload = () => { localStorage.setItem(DB_KEY, r.result); init(); };
+        r.readAsText(e.target.files[0]);
     }
 
     window.onload = init;
