@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Restore Fix</title>
+    <title>Gift Card Tracker - Pro UI</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        :root { --primary: #2563eb; --secondary: #0f172a; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; --google-blue: #4285F4; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #1e293b; }
+        :root { --primary: #4285F4; --success: #34A853; --danger: #EA4335; --secondary: #202124; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #3c4043; }
         
-        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        /* THE UI YOU LIKED */
+        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .inr-text { font-size: 1.6rem; font-weight: 800; color: var(--success); }
 
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
@@ -25,31 +26,35 @@
         .scan-group { display: flex; gap: 8px; }
         .btn-scan { background: #f1f5f9; color: var(--secondary); border: 1.5px solid #e2e8f0; padding: 0 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; }
 
-        /* SCANNER OVERLAY */
+        /* LENS STYLE SCANNER */
         #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
         #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
-        .scan-window { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 100px; border: 2px solid rgba(255,255,255,0.4); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 100; pointer-events: none; }
-        .scan-window::before { content: ''; position: absolute; top: -2px; left: -2px; width: 20px; height: 20px; border: 4px solid var(--google-blue); border-right: 0; border-bottom: 0; border-radius: 12px 0 0 0; }
-        .scan-window::after { content: ''; position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; border: 4px solid var(--google-blue); border-left: 0; border-top: 0; border-radius: 0 0 12px 0; }
+        .scan-window { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 100px; border: 2px solid rgba(255,255,255,0.3); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 100; pointer-events: none; }
+        .scan-window::after { content: ''; position: absolute; inset: -2px; border: 3px solid var(--primary); border-radius: 12px; clip-path: polygon(0 0, 20% 0, 20% 100%, 0 100%, 0 80%, 100% 80%, 100% 100%, 80% 100%, 80% 0, 100% 0, 100% 20%, 0 20%); }
 
-        .scanner-footer { background: #fff; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; border-radius: 24px 24px 0 0; }
+        .scanner-footer { background: #fff; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; border-radius: 24px 24px 0 0; min-height: 220px; }
+        
+        /* NEW STEP PANELS */
+        .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 15px; }
+        .active-step { display: flex; }
+
         .shutter-btn { width: 70px; height: 70px; background: #fff; border: 5px solid #e2e8f0; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .shutter-inner { width: 54px; height: 54px; background: var(--google-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+        .shutter-inner { width: 54px; height: 54px; background: var(--primary); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; }
 
-        /* CONFIRMATION UI - THIS WAS THE MISSING LINK */
-        #confirm-ui { display: none; width: 100%; flex-direction: column; align-items: center; gap: 15px; }
-        .result-preview { width: 90%; text-align: center; font-size: 24px; font-weight: bold; color: var(--google-blue); padding: 15px; background: #f8faff; border-radius: 12px; border: 2px solid var(--google-blue); }
+        #captured-img { width: 90%; max-height: 100px; object-fit: contain; border-radius: 8px; border: 2px solid var(--primary); }
+        .result-preview { width: 90%; text-align: center; font-size: 24px; font-weight: bold; color: var(--primary); padding: 15px; background: #f8faff; border: 2px solid var(--primary); border-radius: 12px; }
 
+        /* THE ORIGINAL BOTTOM BAR */
         .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 100; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #64748b; font-size: 11px; font-weight: 600; cursor: pointer; background: none; border: none; gap: 4px; }
-        .btn-add-main { background: var(--google-blue); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(66,133,244,0.4); margin-top: -40px; border: 4px solid white; }
+        .btn-add-main { background: var(--primary); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(66,133,244,0.4); margin-top: -40px; border: 4px solid white; }
     </style>
 </head>
 <body>
 
 <div class="top-dash">
     <div>
-        <div style="font-size: 10px; font-weight: bold; color: #94a3b8;">TOTAL BALANCE</div>
+        <div style="font-size: 10px; font-weight: bold; color: #94a3b8; letter-spacing: 1px;">TOTAL BALANCE</div>
         <div class="inr-text" id="totalINR">₹0.00</div>
     </div>
     <select id="yearFilter" onchange="refresh()" style="width: auto; padding: 6px 12px; background: rgba(255,255,255,0.1); color: white; border: none; font-weight: bold; border-radius: 8px;"></select>
@@ -60,22 +65,32 @@
 <div id="scanner-overlay">
     <div id="reader"><div class="scan-window"></div></div>
     <div class="scanner-footer">
-        <div id="scan-status" style="font-weight: 600; color: #475569;">Focus on code</div>
         
-        <div id="shutter-group">
-            <div class="shutter-btn" onclick="captureOCR()">
-                <div class="shutter-inner"><i class="material-icons-round">center_focus_strong</i></div>
+        <div id="step-1" class="scan-step active-step">
+            <div id="scan-status" style="font-weight: 600; color: #475569;">Align code and click capture</div>
+            <div class="shutter-btn" onclick="captureSnapshot()">
+                <div class="shutter-inner"><i class="material-icons-round">photo_camera</i></div>
+            </div>
+            <button onclick="stopScanner()" style="background:none; border:none; color:#94a3b8; font-weight:600;">CANCEL</button>
+        </div>
+
+        <div id="step-2" class="scan-step">
+            <div style="font-weight: 600; color: #475569;">Is the image clear?</div>
+            <canvas id="temp-canvas" style="display:none;"></canvas>
+            <img id="captured-img" src="">
+            <div style="display:flex; gap:10px; width:100%;">
+                <button onclick="extractText()" style="flex:1; background:var(--primary); color:white; border:none; padding:15px; border-radius:50px; font-weight:bold;">PROCESS TEXT</button>
+                <button onclick="resetScanner()" style="background:#f1f5f9; border:none; padding:15px; border-radius:50px;"><i class="material-icons-round">refresh</i></button>
             </div>
         </div>
 
-        <div id="confirm-ui">
-            <input type="text" id="edit-result" class="result-preview">
-            <button onclick="commitScan()" style="background:var(--google-blue); color:white; border:none; padding:15px; border-radius:50px; font-weight:bold; width: 100%; display:flex; align-items:center; justify-content:center; gap:8px;">
-                <i class="material-icons-round">check_circle</i> CONFIRM & SAVE
-            </button>
-            <button onclick="resetScanner()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE</button>
+        <div id="step-3" class="scan-step">
+            <div style="font-weight: 600; color: #475569;">Confirm extracted code</div>
+            <input type="text" id="final-code" class="result-preview">
+            <button onclick="applyToUI()" style="background:var(--success); color:white; border:none; padding:15px; border-radius:50px; font-weight:bold; width: 100%;">CONFIRM & SAVE</button>
+            <button onclick="resetScanner()" style="background:none; border:none; color:#64748b; font-weight:bold;">RETAKE PHOTO</button>
         </div>
-        <button onclick="stopScanner()" style="background:none; border:none; color:#94a3b8; font-weight:600;">CLOSE</button>
+
     </div>
 </div>
 
@@ -87,10 +102,9 @@
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_Ultimate_V3";
+    const DB_KEY = "Tracker_BestUI_V2";
     let html5QrCode = null;
-    let currentInput = null;
-    let scanMode = 'ocr';
+    let targetInputId = null;
     let worker = null;
 
     async function init() {
@@ -108,7 +122,7 @@
     }
 
     function addNew(data = {}) {
-        const id = data.id || Date.now();
+        const id = "id_" + Date.now() + Math.floor(Math.random()*1000);
         const div = document.createElement('div');
         div.className = "item-card";
         div.dataset.id = id;
@@ -116,10 +130,10 @@
             <button class="btn-del" onclick="this.parentElement.remove(); save(); refresh();"><i class="material-icons-round" style="font-size:18px">close</i></button>
             <div><label><i class="material-icons-round" style="font-size:14px">calendar_today</i> Date</label><input type="date" class="d-date" value="${data.date || ''}" onchange="save(); refresh();"></div>
             <div class="full-width"><label><i class="material-icons-round" style="font-size:14px">description</i> Description</label><input type="text" class="d-item" value="${data.item || ''}" oninput="save();"></div>
-            <div><label><i class="material-icons-round" style="font-size:14px">qr_code_2</i> Ref ID</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="openScanner(this, 'barcode')"><i class="material-icons-round">barcode_scanner</i></button></div></div>
+            <div><label><i class="material-icons-round" style="font-size:14px">qr_code_2</i> Ref ID</label><div class="scan-group"><input type="text" id="ref_${id}" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="openLens('ref_${id}', 'barcode')"><i class="material-icons-round">barcode_scanner</i></button></div></div>
             <div><label><i class="material-icons-round" style="font-size:14px">payments</i> Price (₹)</label><input type="number" class="d-price" value="${data.price || ''}" oninput="save(); refresh();"></div>
             <div><label><i class="material-icons-round" style="font-size:14px">percent</i> Discount</label><input type="number" class="d-disc" value="${data.disc || ''}" oninput="save(); refresh();"></div>
-            <div><label><i class="material-icons-round" style="font-size:14px">card_giftcard</i> Gift Code</label><div class="scan-group"><input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();"><button class="btn-scan" onclick="openScanner(this, 'ocr')"><i class="material-icons-round">photo_camera</i></button></div></div>
+            <div><label><i class="material-icons-round" style="font-size:14px">card_giftcard</i> Gift Code</label><div class="scan-group"><input type="text" id="gc_${id}" class="d-gccode" value="${data.gccode || ''}" oninput="save();"><button class="btn-scan" onclick="openLens('gc_${id}', 'ocr')"><i class="material-icons-round">photo_camera</i></button></div></div>
             <div><label><i class="material-icons-round" style="font-size:14px">task_alt</i> Redeemed</label><select class="d-redeemed" onchange="save();">
                 <option value="No" ${data.redeemed === 'No' ? 'selected' : ''}>No</option>
                 <option value="Yes" ${data.redeemed === 'Yes' ? 'selected' : ''}>Yes</option>
@@ -128,74 +142,68 @@
         document.getElementById('expenseList').appendChild(div);
     }
 
-    async function openScanner(btn, mode) {
-        currentInput = btn.parentElement.querySelector('input');
-        scanMode = mode;
+    async function openLens(inputId, mode) {
+        targetInputId = inputId;
         document.getElementById('scanner-overlay').style.display = 'flex';
         resetScanner();
 
         if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
 
         if (mode === 'barcode') {
-            document.getElementById('shutter-group').style.display = 'none';
             document.getElementById('scan-status').innerText = "Scanning Barcode...";
             html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: {width: 250, height: 100} }, (txt) => {
-                // Show Result for Confirmation
-                document.getElementById('edit-result').value = txt;
-                document.getElementById('shutter-group').style.display = 'none';
-                document.getElementById('confirm-ui').style.display = 'flex';
-                document.getElementById('scan-status').innerText = "Barcode Detected";
-                html5QrCode.pause(); 
+                document.getElementById('final-code').value = txt;
+                goToStep(3);
+                html5QrCode.pause();
             });
         } else {
-            document.getElementById('shutter-group').style.display = 'flex';
-            document.getElementById('scan-status').innerText = "Align code & Capture";
-            await html5QrCode.start({ facingMode: "environment" }, { fps: 20 }, () => {});
+            document.getElementById('scan-status').innerText = "Align code and capture";
+            await html5QrCode.start({ facingMode: "environment" }, { fps: 24 }, () => {});
         }
     }
 
-    async function captureOCR() {
-        document.getElementById('scan-status').innerText = "Reading...";
+    function captureSnapshot() {
         const video = document.querySelector('video');
-        const canvas = document.createElement('canvas');
+        const canvas = document.getElementById('temp-canvas');
         canvas.width = 800; canvas.height = 300;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, video.videoWidth*0.2, video.videoHeight*0.35, video.videoWidth*0.6, video.videoHeight*0.2, 0, 0, 800, 300);
-
-        const { data: { text } } = await worker.recognize(canvas);
-        document.getElementById('edit-result').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
-        
-        document.getElementById('shutter-group').style.display = 'none';
-        document.getElementById('confirm-ui').style.display = 'flex';
-        document.getElementById('scan-status').innerText = "Verify OCR Result";
+        // Pointing Logic (Middle-Top of video)
+        ctx.drawImage(video, video.videoWidth*0.15, video.videoHeight*0.35, video.videoWidth*0.7, video.videoHeight*0.2, 0, 0, 800, 300);
+        document.getElementById('captured-img').src = canvas.toDataURL('image/png');
+        goToStep(2);
     }
 
-    function commitScan() {
-        if (currentInput) {
-            currentInput.value = document.getElementById('edit-result').value;
-            save(); refresh(); // Push data and refresh total
+    async function extractText() {
+        document.getElementById('final-code').value = "Processing...";
+        goToStep(3);
+        const canvas = document.getElementById('temp-canvas');
+        const { data: { text } } = await worker.recognize(canvas);
+        document.getElementById('final-code').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
+    }
+
+    function applyToUI() {
+        const val = document.getElementById('final-code').value;
+        const input = document.getElementById(targetInputId);
+        if (input) {
+            input.value = val;
+            save(); refresh();
         }
         stopScanner();
     }
 
+    function goToStep(s) {
+        document.querySelectorAll('.scan-step').forEach(el => el.classList.remove('active-step'));
+        document.getElementById('step-' + s).classList.add('active-step');
+    }
+
     function resetScanner() {
-        document.getElementById('confirm-ui').style.display = 'none';
-        if (scanMode === 'ocr') {
-            document.getElementById('shutter-group').style.display = 'flex';
-        } else {
-            if (html5QrCode) html5QrCode.resume();
-        }
-        document.getElementById('scan-status').innerText = scanMode === 'barcode' ? "Scanning Barcode..." : "Align code & Capture";
+        goToStep(1);
+        if (html5QrCode) html5QrCode.resume();
     }
 
     function stopScanner() {
-        if (html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop().then(() => {
-                document.getElementById('scanner-overlay').style.display = 'none';
-            });
-        } else {
-            document.getElementById('scanner-overlay').style.display = 'none';
-        }
+        if (html5QrCode && html5QrCode.isScanning) html5QrCode.stop();
+        document.getElementById('scanner-overlay').style.display = 'none';
     }
 
     function refresh() {
