@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Data First UI</title>
+    <title>Gift Card Tracker - Layout Fix</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -11,41 +11,54 @@
         :root { --primary: #4285F4; --success: #34A853; --danger: #EA4335; --secondary: #202124; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #3c4043; }
         
+        /* HEADER */
         .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
         .inr-text { font-size: 1.6rem; font-weight: 800; color: var(--success); }
 
+        /* LIST UI */
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
         .item-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         
         .btn-del { position: absolute; top: -10px; right: -10px; background: white; color: var(--danger); border: 1px solid #fee2e2; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .full-width { grid-column: span 2; }
-        
         label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block; }
         
-        /* THE FIX: LARGE TEXT BOXES, SMALL BUTTONS */
-        .scan-group { display: flex; align-items: center; background: #fff; border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; transition: border 0.2s; }
-        .scan-group:focus-within { border-color: var(--primary); }
-        
-        input, select { width: 100%; border: none; padding: 10px 12px; font-size: 14px; font-weight: 500; outline: none; color: #1e293b; background: transparent; }
+        .scan-group { display: flex; align-items: center; background: #fff; border: 1.5px solid #cbd5e1; border-radius: 10px; overflow: hidden; }
+        input, select { width: 100%; border: none; padding: 10px 12px; font-size: 14px; font-weight: 500; outline: none; background: transparent; }
         .price-input { border: 1.5px solid #cbd5e1; border-radius: 10px; width: 100%; box-sizing: border-box; }
+        .btn-icon-scan { background: #f8fafc; border-left: 1px solid #e2e8f0; color: #64748b; padding: 8px 12px; cursor: pointer; }
 
-        .btn-icon-scan { background: #f8fafc; border-left: 1px solid #e2e8f0; color: #64748b; padding: 8px 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .btn-icon-scan:active { background: #f1f5f9; color: var(--primary); }
+        /* SCANNER OVERLAY FIX */
+        #scanner-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; flex-direction: column; }
+        #reader { width: 100%; flex-grow: 1; position: relative; }
+        .scan-window { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 80px; border: 2px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); z-index: 10; pointer-events: none; }
 
-        /* SCANNER OVERLAY */
-        #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
-        #reader { width: 100%; flex-grow: 1; }
-        .scan-window { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 300px; height: 100px; border: 2px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); z-index: 100; pointer-events: none; }
-
-        .scanner-footer { background: #fff; padding: 25px; display: flex; flex-direction: column; align-items: center; gap: 15px; border-radius: 24px 24px 0 0; }
+        /* FIXED FOOTER PREVENTS HIDING BUTTONS */
+        .scanner-footer { 
+            background: #fff; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 15px; 
+            border-radius: 24px 24px 0 0; 
+            z-index: 100;
+            position: relative;
+        }
+        
         .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 12px; }
         .active-step { display: flex; }
 
-        #captured-img { width: 100%; max-height: 120px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .result-box { width: 100%; text-align: center; font-size: 20px; font-weight: bold; color: var(--primary); padding: 12px; background: #f1f5f9; border-radius: 10px; border: none; margin: 10px 0; }
+        #captured-img { width: 100%; max-height: 100px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; background: #eee; }
+        .result-box { width: 100%; text-align: center; font-size: 20px; font-weight: bold; color: var(--primary); padding: 12px; background: #f1f5f9; border-radius: 10px; border: none; margin: 5px 0; }
+
+        .btn-action { width: 100%; padding: 15px; border-radius: 30px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-ghost { background: none; color: #64748b; }
 
         /* BOTTOM NAV */
-        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 100; }
+        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 90; }
         .btn-add-main { background: var(--primary); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(66,133,244,0.3); margin-top: -35px; border: 4px solid white; }
     </style>
 </head>
@@ -66,28 +79,28 @@
     <div class="scanner-footer">
         
         <div id="step-1" class="scan-step active-step">
-            <span id="scan-label" style="font-weight: 600;">Point at the code</span>
-            <div onclick="takePhoto()" style="width:60px; height:60px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white;">
-                <i class="material-icons-round" style="font-size:30px">photo_camera</i>
+            <span id="scan-label" style="font-weight: 600;">Align code & click</span>
+            <div onclick="takePhoto()" style="width:64px; height:64px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                <i class="material-icons-round" style="font-size:32px">photo_camera</i>
             </div>
-            <button onclick="stopScanner()" style="border:none; background:none; color:#94a3b8; font-weight:700;">CANCEL</button>
+            <button onclick="stopScanner()" class="btn-ghost">CANCEL</button>
         </div>
 
         <div id="step-2" class="scan-step">
-            <span style="font-weight: 600;">Verify Photo</span>
+            <span style="font-weight: 600;">Preview Captured Image</span>
             <canvas id="hidden-canvas" style="display:none;"></canvas>
             <img id="captured-img" src="">
             <div style="display:flex; gap:10px; width:100%;">
-                <button onclick="runLogic()" style="flex:1; background:var(--primary); color:white; border:none; padding:12px; border-radius:30px; font-weight:bold;">PROCESS</button>
-                <button onclick="resetScanner()" style="padding:12px; border:none; border-radius:30px; background:#f1f5f9;"><i class="material-icons-round">refresh</i></button>
+                <button onclick="runLogic()" class="btn-action btn-primary" style="flex:2;">PROCESS</button>
+                <button onclick="resetScanner()" class="btn-action" style="flex:1; background:#f1f5f9;"><i class="material-icons-round">refresh</i></button>
             </div>
         </div>
 
         <div id="step-3" class="scan-step">
-            <span style="font-weight: 600;">Is this correct?</span>
+            <span style="font-weight: 600;">Extracted Result</span>
             <input type="text" id="final-code" class="result-box">
-            <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:15px; border-radius:30px; font-weight:bold;">CONFIRM & SAVE</button>
-            <button onclick="resetScanner()" style="border:none; background:none; color:#94a3b8; font-weight:700;">RETAKE</button>
+            <button onclick="confirmToUI()" class="btn-action btn-success">CONFIRM & SAVE</button>
+            <button onclick="resetScanner()" class="btn-ghost">RETAKE PHOTO</button>
         </div>
     </div>
 </div>
@@ -100,7 +113,7 @@
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_Final_V5";
+    const DB_KEY = "Tracker_LayoutFix_V1";
     let html5QrCode = null;
     let activeInput = null;
     let mode = 'barcode';
@@ -166,16 +179,16 @@
         if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
         
         const config = { facingMode: "environment" };
-        const qConfig = { fps: 20, qrbox: { width: 280, height: 100 } };
+        const qConfig = { fps: 20, qrbox: { width: 280, height: 80 } };
 
         if(mode === 'barcode') {
-            document.getElementById('scan-label').innerText = "Scanning for Barcode...";
+            document.getElementById('scan-label').innerText = "Scanning Barcode...";
             html5QrCode.start(config, qConfig, (txt) => {
                 barcodeBuffer = txt;
-                takePhoto(); // Capture image for UI verification
-            });
+                takePhoto();
+            }).catch(err => alert("Camera error: " + err));
         } else {
-            document.getElementById('scan-label').innerText = "Center code & Take Photo";
+            document.getElementById('scan-label').innerText = "Align Gift Code & Capture";
             await html5QrCode.start(config, qConfig, () => {});
         }
     }
@@ -185,7 +198,8 @@
         const canvas = document.getElementById('hidden-canvas');
         canvas.width = 800; canvas.height = 300;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.35, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 800, 300);
+        // Capture a wide strip from center
+        ctx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.3, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 800, 300);
         document.getElementById('captured-img').src = canvas.toDataURL('image/png');
         changeStep(2);
         if(html5QrCode) html5QrCode.pause();
@@ -223,8 +237,13 @@
     }
 
     function stopScanner() {
-        if(html5QrCode) html5QrCode.stop();
-        document.getElementById('scanner-overlay').style.display = 'none';
+        if(html5QrCode) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('scanner-overlay').style.display = 'none';
+            }).catch(() => {
+                document.getElementById('scanner-overlay').style.display = 'none';
+            });
+        }
     }
 
     function refresh() {
@@ -259,7 +278,7 @@
         const data = localStorage.getItem(DB_KEY);
         const blob = new Blob([data], { type: 'application/json' });
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = `Tracker_Backup.json`; a.click();
+        a.href = URL.createObjectURL(blob); a.download = `Backup.json`; a.click();
     }
 
     function importData(event) {
