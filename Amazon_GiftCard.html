@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Fix QR Scan</title>
+    <title>Gift Card Tracker - Isolated Logics</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -30,9 +30,10 @@
 
         .savings-badge { font-size: 11px; font-weight: bold; color: var(--success); margin-top: 4px; display: block; }
 
+        /* SCANNER OVERLAY */
         #scanner-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; flex-direction: column; }
         #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
-        .scan-window { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 120px; border: 2.5px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 10; pointer-events: none; }
+        .scan-window { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 100px; border: 2.5px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 10; pointer-events: none; }
 
         .scanner-footer { background: #fff; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 12px; border-radius: 24px 24px 0 0; z-index: 100; flex-shrink: 0; }
         .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 10px; }
@@ -40,7 +41,7 @@
         
         .preview-container { width: 280px; height: 100px; overflow: hidden; border-radius: 8px; border: 2px solid var(--primary); background: #000; }
         #captured-img { width: 100%; height: 100%; object-fit: contain; }
-        .result-box { width: 100%; text-align: center; font-size: 16px; font-weight: bold; color: var(--primary); padding: 12px; background: #f1f5f9; border-radius: 10px; border: none; box-sizing: border-box; }
+        .result-box { width: 100%; text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); padding: 12px; background: #f1f5f9; border-radius: 10px; border: none; box-sizing: border-box; }
 
         .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 90; }
         .btn-add-main { background: var(--primary); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(66,133,244,0.3); margin-top: -35px; border: 4px solid white; }
@@ -62,22 +63,26 @@
     <div id="reader"><div class="scan-window"></div></div>
     <div class="scanner-footer">
         <div id="step-1" class="scan-step active-step">
-            <span id="scan-hint" style="font-weight: 700; color: #1e293b;">Aligning Camera...</span>
-            <div id="btn-snap" onclick="manualCapture()" style="width:60px; height:60px; background:var(--primary); border-radius:50%; display:none; align-items:center; justify-content:center; color:white;">
+            <span id="scan-hint" style="font-weight: 700; color: #1e293b;">Position Code</span>
+            <div id="btn-snap" onclick="takePhotoOCR()" style="width:60px; height:60px; background:var(--primary); border-radius:50%; display:none; align-items:center; justify-content:center; color:white;">
                 <i class="material-icons-round" style="font-size:32px">photo_camera</i>
             </div>
             <button onclick="stopScanner()" style="background:none; border:none; color:#64748b; font-weight:bold;">CANCEL</button>
         </div>
 
         <div id="step-2" class="scan-step">
-            <span style="font-weight: 700;">Processing Image...</span>
+            <span style="font-weight: 700;">Preview</span>
             <div class="preview-container"><canvas id="hidden-canvas" style="display:none;"></canvas><img id="captured-img" src=""></div>
+            <div style="display:flex; gap:10px; width:100%;">
+                <button onclick="processOCR()" style="background:var(--primary); color:white; flex:2; border:none; padding:14px; border-radius:30px; font-weight:bold;">EXTRACT CODE</button>
+                <button onclick="resetScanner()" style="background:#f1f5f9; flex:1; border:none; border-radius:30px;"><i class="material-icons-round">refresh</i></button>
+            </div>
         </div>
 
         <div id="step-3" class="scan-step">
-            <span style="font-weight: 700;">Verify Scanned Info</span>
+            <span style="font-weight: 700;">Confirm Result</span>
             <input type="text" id="final-code" class="result-box">
-            <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:14px; border-radius:30px; font-weight:bold;">SAVE TO FIELD</button>
+            <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:14px; border-radius:30px; font-weight:bold;">SAVE TO LIST</button>
             <button onclick="resetScanner()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE</button>
         </div>
     </div>
@@ -91,8 +96,8 @@
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_QR_Fix_V1";
-    let html5QrCode = null, activeInput = null, currentMode = '', worker = null;
+    const DB_KEY = "Tracker_Isolated_V1";
+    let html5QrCode = null, activeInput = null, worker = null;
 
     async function init() {
         const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
@@ -115,11 +120,11 @@
             <div><label>Price (₹)</label><input type="number" class="d-price price-input" value="${data.price || ''}" oninput="save(); refresh();"></div>
             <div class="full-width"><label>Description</label><input type="text" class="d-item price-input" placeholder="Store Name" value="${data.item || ''}" oninput="save();"></div>
             
-            <div class="full-width"><label>Ref ID (Barcode)</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><div class="btn-icon-scan" onclick="startScan(this, 'barcode')"><i class="material-icons-round">barcode_scanner</i></div></div></div>
+            <div class="full-width"><label>Ref ID (Barcode)</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><div class="btn-icon-scan" onclick="startBarcodeScan(this)"><i class="material-icons-round">barcode_scanner</i></div></div></div>
             
-            <div class="full-width"><label>Gift Code (OCR)</label><div class="scan-group"><input type="text" class="d-gc" value="${data.gc || ''}" oninput="save();"><div class="btn-icon-scan" onclick="startScan(this, 'ocr')"><i class="material-icons-round">photo_camera</i></div></div></div>
+            <div class="full-width"><label>Gift Code (OCR)</label><div class="scan-group"><input type="text" class="d-gc" value="${data.gc || ''}" oninput="save();"><div class="btn-icon-scan" onclick="startOCRScan(this)"><i class="material-icons-round">photo_camera</i></div></div></div>
 
-            <div class="full-width"><label>Activation (QR)</label><div class="scan-group"><input type="text" class="d-act" value="${data.act || ''}" placeholder="Scan QR then tap SMS" oninput="save();"><div class="btn-icon-scan" onclick="startScan(this, 'qr')"><i class="material-icons-round">qr_code_2</i></div><div class="btn-sms" onclick="sendSMS(this)"><i class="material-icons-round">sms</i></div></div></div>
+            <div class="full-width"><label>Activation (QR)</label><div class="scan-group"><input type="text" class="d-act" value="${data.act || ''}" oninput="save();"><div class="btn-icon-scan" onclick="startQRScan(this)"><i class="material-icons-round">qr_code_2</i></div><div class="btn-sms" onclick="sendSMS(this)"><i class="material-icons-round">sms</i></div></div></div>
             
             <div><label>Disc %</label><input type="number" class="d-disc price-input" value="${data.disc || ''}" oninput="save(); refresh();"></div>
             <div><label>Net (₹)</label><input type="text" class="d-net price-input" readonly style="background:#f8fafc; color:var(--primary); font-weight:bold;"><span class="savings-badge d-save">Save: ₹0.00</span></div>
@@ -129,131 +134,44 @@
         refresh();
     }
 
-    async function startScan(btn, mode) {
+    // --- LOGIC 1: BARCODE (AUTO) ---
+    function startBarcodeScan(btn) {
         activeInput = btn.parentElement.querySelector('input');
-        currentMode = mode;
-        document.getElementById('scanner-overlay').style.display = 'flex';
-        document.getElementById('btn-snap').style.display = (mode === 'ocr') ? 'flex' : 'none';
-        document.getElementById('scan-hint').innerText = (mode === 'ocr') ? "Center Text & Take Photo" : "Point at Code to Scan";
-        changeStep(1);
-
-        if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-        
-        const config = { 
-            fps: 20, 
-            qrbox: { width: 280, height: 120 },
-            aspectRatio: 1.0 
-        };
-
-        if(mode !== 'ocr') {
-            // Logic for Auto-Detection (QR and Barcode)
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                config, 
-                (decodedText) => {
-                    // Success callback
-                    html5QrCode.pause();
-                    manualCapture(); // Visual feedback
-                    document.getElementById('final-code').value = decodedText;
-                    changeStep(3);
-                },
-                () => {} // Ignore scan failures
-            ).catch(err => alert("Camera Error: " + err));
-        } else {
-            // Logic for Manual OCR Photo
-            await html5QrCode.start({ facingMode: "environment" }, config, () => {}).catch(err => alert(err));
-        }
+        openScannerOverlay("barcode", "Align Barcode");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: { width: 280, height: 100 } }, (txt) => {
+            html5QrCode.pause();
+            document.getElementById('final-code').value = txt;
+            changeStep(3);
+        });
     }
 
-    function manualCapture() {
+    // --- LOGIC 2: OCR (MANUAL SNAP) ---
+    async function startOCRScan(btn) {
+        activeInput = btn.parentElement.querySelector('input');
+        openScannerOverlay("ocr", "Align Text & Snap");
+        document.getElementById('btn-snap').style.display = "flex";
+        await html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: { width: 280, height: 100 } }, () => {});
+    }
+
+    function takePhotoOCR() {
         const video = document.querySelector('video'), canvas = document.getElementById('hidden-canvas');
-        if(!video) return;
-        canvas.width = 560; canvas.height = 240;
+        canvas.width = 560; canvas.height = 200;
         const ctx = canvas.getContext('2d'), vW = video.videoWidth, vH = video.videoHeight;
-        const cropW = vW * 0.8, cropH = cropW * (240/560);
+        const cropW = vW * 0.8, cropH = cropW / 2.8;
         const startX = (vW - cropW) / 2, startY = (vH * 0.45) - (cropH / 2);
-        ctx.drawImage(video, startX, startY, cropW, cropH, 0, 0, 560, 240);
+        ctx.drawImage(video, startX, startY, cropW, cropH, 0, 0, 560, 200);
         document.getElementById('captured-img').src = canvas.toDataURL('image/png');
-        
-        if(currentMode === 'ocr') {
-            changeStep(2);
-            performOCR();
-        }
+        html5QrCode.pause();
+        changeStep(2);
     }
 
-    async function performOCR() {
+    async function processOCR() {
+        document.getElementById('final-code').value = "Extracting...";
+        changeStep(3);
         const { data: { text } } = await worker.recognize(document.getElementById('hidden-canvas'));
         document.getElementById('final-code').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
-        changeStep(3);
     }
 
-    function confirmToUI() { 
-        if(activeInput) { activeInput.value = document.getElementById('final-code').value; save(); refresh(); } 
-        stopScanner(); 
-    }
-
-    function sendSMS(btn) {
-        const val = btn.parentElement.querySelector('input').value;
-        if(!val) return alert("Please scan the QR first.");
-        window.location.href = `sms:?body=${encodeURIComponent(val)}`;
-    }
-
-    function stopScanner() { 
-        if(html5QrCode && html5QrCode.isScanning) {
-            html5QrCode.stop().then(() => { 
-                document.getElementById('scanner-overlay').style.display = 'none'; 
-            }); 
-        } else {
-            document.getElementById('scanner-overlay').style.display = 'none';
-        }
-    }
-
-    function changeStep(s) { 
-        document.querySelectorAll('.scan-step').forEach(el => el.classList.remove('active-step')); 
-        document.getElementById('step-' + s).classList.add('active-step'); 
-    }
-
-    function resetScanner() { 
-        if(html5QrCode) html5QrCode.resume(); 
-        changeStep(1); 
-    }
-
-    function refresh() {
-        const year = document.getElementById('yearFilter').value;
-        let total = 0;
-        document.querySelectorAll('.item-card').forEach(card => {
-            const dt = card.querySelector('.d-date').value, price = parseFloat(card.querySelector('.d-price').value) || 0, disc = parseFloat(card.querySelector('.d-disc').value) || 0;
-            const net = price - (price * (disc / 100)), saved = price - net;
-            card.querySelector('.d-net').value = net.toFixed(2);
-            card.querySelector('.d-save').innerText = `Save: ₹${saved.toFixed(2)}`;
-            if(!dt || dt.startsWith(year)) { total += net; card.style.display = "grid"; } else card.style.display = "none";
-        });
-        document.getElementById('totalINR').innerText = `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-    }
-
-    function save() {
-        const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
-            date: c.querySelector('.d-date').value, item: c.querySelector('.d-item').value, 
-            ref: c.querySelector('.d-ref').value, price: c.querySelector('.d-price').value, 
-            disc: c.querySelector('.d-disc').value, gc: c.querySelector('.d-gc').value, 
-            act: c.querySelector('.d-act').value, status: c.querySelector('.d-status').value
-        }));
-        localStorage.setItem(DB_KEY, JSON.stringify(list));
-    }
-
-    function exportData() {
-        const data = localStorage.getItem(DB_KEY);
-        const blob = new Blob([data], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Tracker_Export.json`; a.click();
-    }
-
-    function importData(event) {
-        const reader = new FileReader();
-        reader.onload = (e) => { localStorage.setItem(DB_KEY, e.target.result); location.reload(); };
-        reader.readAsText(event.target.files[0]);
-    }
-
-    window.onload = init;
-</script>
-</body>
-</html>
+    // --- LOGIC 3: QR (AUTO + SPACES) ---
+    function startQRScan(btn) {
+        activeInput =
