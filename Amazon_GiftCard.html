@@ -3,48 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Gift Card Tracker</title>
+    <title>Gift Card Tracker Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root { --primary: #2563eb; --secondary: #0f172a; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; }
-        
-        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
         .inr-text { font-size: 1.5rem; font-weight: 800; color: var(--success); }
-
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
         .item-card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        
         .btn-del { position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; }
-        
         .full-width { grid-column: span 2; }
         label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 5px; }
-        input, select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; }
-        
+        input, select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
         .scan-group { display: flex; gap: 6px; }
         .btn-scan { background: var(--secondary); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; font-size: 16px; }
-
-        /* --- ADVANCED SCANNER UI --- */
-        #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; }
-        #reader { width: 100%; height: 100%; }
-
-        /* The "Hole-Punch" Viewport */
-        .viewport-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; pointer-events: none; z-index: 10000; }
-        .mask-outer { background: rgba(0,0,0,0.7); flex-grow: 1; }
-        .mask-middle { display: flex; height: 120px; }
-        .mask-side { background: rgba(0,0,0,0.7); flex-grow: 1; }
-        .scan-window { width: 300px; height: 120px; border: 3px solid var(--success); border-radius: 8px; box-shadow: 0 0 15px var(--success); }
-
-        .scanner-controls { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10001; }
-        .slider-box { width: 80%; color: white; font-size: 11px; text-align: center; margin-bottom: 5px; }
-        .btn-snap { background: var(--success); color: white; border: none; padding: 12px 40px; border-radius: 50px; font-weight: bold; font-size: 14px; }
-        .btn-close-scanner { background: var(--danger); color: white; border: none; padding: 8px 20px; border-radius: 5px; margin-top: 5px; }
-
-        /* FOOTER */
-        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; justify-content: space-around; border-top: 1px solid #e2e8f0; z-index: 100; }
-        .btn-footer { border: none; background: none; font-weight: 700; color: #64748b; cursor: pointer; display: flex; flex-direction: column; align-items: center; font-size: 11px; }
-        .btn-main { background: var(--primary); color: white; padding: 12px 30px; border-radius: 50px; font-weight: bold; font-size: 14px; }
+        #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
+        #reader { width: 100%; flex-grow: 1; }
+        .scanner-footer { height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; color: white; gap: 15px; }
+        .btn-close { background: white; color: black; border: none; padding: 10px 40px; border-radius: 50px; font-weight: bold; }
+        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; justify-content: space-around; border-top: 1px solid #e2e8f0; }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 50px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -55,42 +35,36 @@
 </div>
 
 <div class="container">
-    <div style="margin-bottom: 15px;"><select id="yearFilter" onchange="refresh()" style="width: auto; font-weight: bold;"></select></div>
+    <select id="yearFilter" onchange="refresh()" style="width: auto; margin-bottom: 15px; font-weight: bold;"></select>
     <div id="expenseList"></div>
 </div>
 
 <div id="scanner-overlay">
     <div id="reader"></div>
-    <div class="viewport-container">
-        <div class="mask-outer"></div>
-        <div class="mask-middle"><div class="mask-side"></div><div class="scan-window"></div><div class="mask-side"></div></div>
-        <div class="mask-outer"></div>
-    </div>
-    <div class="scanner-controls">
-        <div class="slider-box">ZOOM: <input type="range" id="zoomCtrl" min="1" max="5" step="0.1" value="1" style="width:100%"></div>
-        <div id="scan-status" style="color: white; font-size: 12px;">Align code in green box</div>
-        <button class="btn-snap" id="snapBtn">SNAP & READ</button>
-        <button class="btn-close-scanner" onclick="stopScanner()">CANCEL</button>
+    <div class="scanner-footer">
+        <div id="scan-status" style="font-size: 14px; font-weight: bold; color: #10b981;">Initializing Camera...</div>
+        <button class="btn-close" onclick="stopScanner()">CANCEL</button>
     </div>
 </div>
 
 <div class="bottom-actions">
-    <button class="btn-footer" onclick="document.getElementById('importFile').click()"><span>📥</span><span>Import</span></button>
-    <button class="btn-footer btn-main" onclick="addNew()"><span>＋</span><span>Add Entry</span></button>
-    <button class="btn-footer" onclick="exportData()"><span>📤</span><span>Export</span></button>
+    <button onclick="document.getElementById('importFile').click()" style="background:none; border:none; color:#64748b; font-weight:bold;">Import</button>
+    <button onclick="addNew()" class="btn-main">＋ Add Entry</button>
+    <button onclick="exportData()" style="background:none; border:none; color:#64748b; font-weight:bold;">Export</button>
 </div>
 
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_Complete_V11";
+    const DB_KEY = "Amazon_Tracker_V11_Stable";
     let html5QrCode = null;
     let currentInput = null;
-    let track = null;
 
     function init() {
         const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         document.getElementById('expenseList').innerHTML = "";
+        if(saved.length === 0) addNew();
+        else saved.forEach(s => addNew(s));
         
         const yf = document.getElementById('yearFilter');
         const cy = new Date().getFullYear();
@@ -99,8 +73,6 @@
             let o = document.createElement('option'); o.value = i; o.innerText = i;
             if(i === cy) o.selected = true; yf.appendChild(o);
         }
-
-        if(saved.length === 0) addNew(); else saved.forEach(s => addNew(s));
         refresh();
     }
 
@@ -113,71 +85,66 @@
             <button class="btn-del" onclick="deleteRecord(${id})">✕</button>
             <div><label>Date</label><input type="date" class="d-date" value="${data.date || ''}" onchange="save(); refresh();"></div>
             <div class="full-width"><label>Description</label><input type="text" class="d-item" value="${data.item || ''}" oninput="save();"></div>
-            <div><label>Ref ID</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="startScanner(this, 'barcode')">📷</button></div></div>
+            <div><label>Ref ID</label><div class="scan-group">
+                <input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();">
+                <button class="btn-scan" onclick="startScanner(this, 'barcode')">📷</button>
+            </div></div>
             <div><label>Price (₹)</label><input type="number" class="d-price" value="${data.price || ''}" oninput="save(); refresh();"></div>
             <div><label>Disc %</label><input type="number" class="d-disc" value="${data.disc || ''}" oninput="save(); refresh();"></div>
-            <div><label>Gift Code</label><div class="scan-group"><input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();"><button class="btn-scan" onclick="startScanner(this, 'text')">📷</button></div></div>
-            <div><label>Redeemed?</label><select class="d-redeemed" onchange="save();"><option value="No" ${data.redeemed === 'No' ? 'selected' : ''}>No</option><option value="Yes" ${data.redeemed === 'Yes' ? 'selected' : ''}>Yes</option></select></div>
+            <div><label>Gift Code</label><div class="scan-group">
+                <input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();">
+                <button class="btn-scan" onclick="startScanner(this, 'text')">📷</button>
+            </div></div>
+            <div><label>Redeemed?</label><select class="d-redeemed" onchange="save();">
+                <option value="No" ${data.redeemed === 'No' ? 'selected' : ''}>No</option>
+                <option value="Yes" ${data.redeemed === 'Yes' ? 'selected' : ''}>Yes</option>
+            </select></div>
         `;
         document.getElementById('expenseList').appendChild(div);
     }
 
+    function deleteRecord(id) {
+        if(confirm("Delete this record?")) {
+            document.querySelector(`[data-id="${id}"]`).remove();
+            save(); refresh();
+        }
+    }
+
     async function startScanner(btn, mode) {
         currentInput = btn.parentElement.querySelector('input');
-        document.getElementById('scanner-overlay').style.display = 'block';
-        const status = document.getElementById('scan-status');
-        const snapBtn = document.getElementById('snapBtn');
-        
-        html5QrCode = new Html5Qrcode("reader");
-        
+        document.getElementById('scanner-overlay').style.display = 'flex';
+        document.getElementById('scan-status').innerText = mode === 'barcode' ? "Point at Barcode/QR" : "Point at Code (Reading Text...)";
+
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+
         try {
-            await html5QrCode.start({ facingMode: "environment" }, { fps: 10, videoConstraints: { width: { ideal: 4000 } } }, (text) => {
-                if(mode === 'barcode') { currentInput.value = text; stopScanner(); save(); }
-            });
-            
-            track = html5QrCode.getRunningTrack();
-            const caps = track.getCapabilities();
-            const zoom = document.getElementById('zoomCtrl');
-            if(caps.zoom) {
-                zoom.min = caps.zoom.min; zoom.max = caps.zoom.max;
-                zoom.oninput = () => track.applyConstraints({ advanced: [{ zoom: zoom.value }] });
+            if (mode === 'barcode') {
+                await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+                    currentInput.value = text; stopScanner(); save();
+                });
+            } else {
+                // Text OCR Mode
+                await html5QrCode.start({ facingMode: "environment" }, { fps: 5 }, async () => {
+                    document.getElementById('scan-status').innerText = "Processing Text...";
+                    const canvas = html5QrCode.getCanvas();
+                    const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
+                    if (text.trim().length > 5) {
+                        currentInput.value = text.trim();
+                        stopScanner();
+                        save();
+                    }
+                });
             }
-
-            snapBtn.onclick = async () => {
-                status.innerText = "Processing...";
-                const video = document.querySelector('video');
-                const canvas = document.createElement('canvas');
-                canvas.width = 1000; canvas.height = 400;
-                const ctx = canvas.getContext('2d');
-                // Crop middle section of video
-                ctx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.4, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 1000, 400);
-                
-                const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
-                currentInput.value = text.replace(/[^A-Z0-9-]/gi, '').trim();
-                stopScanner(); save();
-            };
-
-            snapBtn.style.display = (mode === 'text') ? 'block' : 'none';
-        } catch (e) { stopScanner(); }
+        } catch (err) { 
+            console.error(err);
+            alert("Camera failed. Check permissions or refresh."); 
+            stopScanner(); 
+        }
     }
 
     async function stopScanner() {
-        if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
+        if (html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
         document.getElementById('scanner-overlay').style.display = 'none';
-    }
-
-    function save() {
-        const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
-            id: c.dataset.id,
-            date: c.querySelector('.d-date').value,
-            item: c.querySelector('.d-item').value,
-            ref: c.querySelector('.d-ref').value,
-            price: c.querySelector('.d-price').value,
-            disc: c.querySelector('.d-disc').value,
-            gccode: c.querySelector('.d-gccode').value,
-            redeemed: c.querySelector('.d-redeemed').value
-        }));
-        localStorage.setItem(DB_KEY, JSON.stringify(list));
     }
 
     function refresh() {
@@ -195,15 +162,34 @@
         document.getElementById('totalINR').innerText = `₹${total.toLocaleString('en-IN')}`;
     }
 
-    function deleteRecord(id) { if(confirm("Delete?")) { document.querySelector(`[data-id="${id}"]`).remove(); save(); refresh(); } }
+    function save() {
+        const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
+            id: c.dataset.id,
+            date: c.querySelector('.d-date').value,
+            item: c.querySelector('.d-item').value,
+            ref: c.querySelector('.d-ref').value,
+            price: c.querySelector('.d-price').value,
+            disc: c.querySelector('.d-disc').value,
+            gccode: c.querySelector('.d-gccode').value,
+            redeemed: c.querySelector('.d-redeemed').value
+        }));
+        localStorage.setItem(DB_KEY, JSON.stringify(list));
+    }
+
     function exportData() {
         const blob = new Blob([localStorage.getItem(DB_KEY)], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `GC_Backup.json`; a.click();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Backup.json`;
+        a.click();
     }
+
     function importData(e) {
-        const r = new FileReader(); r.onload = () => { localStorage.setItem(DB_KEY, r.result); init(); };
+        const r = new FileReader();
+        r.onload = () => { localStorage.setItem(DB_KEY, r.result); init(); };
         r.readAsText(e.target.files[0]);
     }
+
     window.onload = init;
 </script>
 </body>
