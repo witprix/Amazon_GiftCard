@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - QR Fix</title>
+    <title>Gift Card Tracker - Solid Version</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root { --primary: #4285F4; --success: #34A853; --danger: #EA4335; --secondary: #202124; --bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 120px; color: #3c4043; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 120px; color: #3c4043; overflow-x: hidden; }
         
         .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
         .inr-text { font-size: 1.4rem; font-weight: 800; color: var(--success); }
-        #yearFilter { width: 80px; padding: 6px; font-size: 14px; font-weight: bold; color: white; background: #374151; border: 1px solid #4b5563; border-radius: 8px; }
+        #yearFilter { width: 85px; padding: 6px; font-size: 14px; font-weight: bold; color: white; background: #374151; border: 1px solid #4b5563; border-radius: 8px; }
 
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
         .item-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -36,7 +36,7 @@
         #scanner-ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
         .scan-window { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); border: 2.5px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); }
         .rect-box { width: 280px; height: 110px; }
-        .square-box { width: 250px; height: 250px; } /* Updated for QR Fix */
+        .square-box { width: 260px; height: 260px; } 
 
         .scanner-footer { background: #fff; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 15px; border-radius: 24px 24px 0 0; z-index: 100; pointer-events: auto; }
         .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 12px; }
@@ -72,7 +72,7 @@
     
     <div class="scanner-footer">
         <div id="step-1" class="scan-step active-step">
-            <span id="scan-hint" style="font-weight: 700; color: #1e293b;">Initializing...</span>
+            <span id="scan-hint" style="font-weight: 700; color: #1e293b;">Aligning Camera...</span>
             <div id="btn-snap" onclick="manualSnap()" style="width:64px; height:64px; background:var(--primary); border-radius:50%; display:none; align-items:center; justify-content:center; color:white; box-shadow: 0 4px 10px rgba(66,133,244,0.4);">
                 <i class="material-icons-round" style="font-size:32px">photo_camera</i>
             </div>
@@ -83,13 +83,13 @@
             <span style="font-weight: 700;">Captured Preview</span>
             <div class="preview-container"><canvas id="hidden-canvas" style="display:none;"></canvas><img id="captured-img" src=""></div>
             <div style="display:flex; gap:10px; width:100%;">
-                <button onclick="processPreview()" style="background:var(--primary); color:white; flex:2; border:none; padding:16px; border-radius:30px; font-weight:bold;">PROCESS CODE</button>
+                <button onclick="processPreview()" id="btn-process" style="background:var(--primary); color:white; flex:2; border:none; padding:16px; border-radius:30px; font-weight:bold;">PROCESS CODE</button>
                 <button onclick="retakePhoto()" style="background:#f1f5f9; flex:1; border:none; border-radius:30px;"><i class="material-icons-round">refresh</i></button>
             </div>
         </div>
 
         <div id="step-3" class="scan-step">
-            <span style="font-weight: 700;">Confirm Extracted Data</span>
+            <span style="font-weight: 700;">Confirm Data</span>
             <input type="text" id="final-code" class="result-box">
             <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:16px; border-radius:30px; font-weight:bold;">CONFIRM & SAVE</button>
             <button onclick="retakePhoto()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE SCAN</button>
@@ -105,19 +105,20 @@
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_Persistent_V4";
+    const DB_KEY = "Tracker_Final_Stable_V5";
     let html5QrCode = null, activeInput = null, currentMode = '', worker = null, tempScannedText = "";
 
-    async function init() {
-        const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-        const cy = new Date().getFullYear(), yf = document.getElementById('yearFilter');
-        for(let i=cy-2; i<=cy+1; i++){
-            let o = document.createElement('option'); o.value=i; o.innerText=i;
-            if(i===cy) o.selected=true; yf.appendChild(o);
-        }
-        if(saved.length === 0) addNew(); else saved.forEach(s => addNew(s));
-        refresh();
-        worker = await Tesseract.createWorker('eng');
+    function init() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+            const cy = new Date().getFullYear(), yf = document.getElementById('yearFilter');
+            for(let i=cy-2; i<=cy+1; i++){
+                let o = document.createElement('option'); o.value=i; o.innerText=i;
+                if(i===cy) o.selected=true; yf.appendChild(o);
+            }
+            if(saved.length === 0) addNew(); else saved.forEach(s => addNew(s));
+            refresh();
+        } catch (e) { console.error("Init Error", e); }
     }
 
     function addNew(data = {}) {
@@ -142,7 +143,7 @@
     async function cleanupCamera() {
         if (html5QrCode) {
             try { if (html5QrCode.isScanning) await html5QrCode.stop(); } catch (e) {}
-            html5QrCode.clear();
+            try { html5QrCode.clear(); } catch (e) {}
             html5QrCode = null;
         }
         document.getElementById('reader').innerHTML = '';
@@ -161,37 +162,42 @@
         const snap = document.getElementById('btn-snap');
         const hint = document.getElementById('scan-hint');
 
-        // Logic split: QR (act) gets a square search box and specific QR format filter
         let config = { fps: 20 };
         if (mode === 'act') {
             win.className = "scan-window square-box";
-            hint.innerText = "Align QR Code";
+            hint.innerText = "Center QR Code";
             snap.style.display = 'none';
             config.qrbox = { width: 250, height: 250 };
-            config.formatsToSupport = [ Html5QrcodeSupportedFormats.QR_CODE ]; // QR FIX: Force QR mode only
         } else {
             win.className = "scan-window rect-box";
-            hint.innerText = (mode === 'gc') ? "Focus Code & Snap" : "Align Barcode";
+            hint.innerText = (mode === 'gc') ? "Snap Gift Code" : "Center Barcode";
             snap.style.display = (mode === 'gc') ? 'flex' : 'none';
             config.qrbox = { width: 280, height: 110 };
         }
 
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, config, (txt) => {
-            if (mode !== 'gc') {
-                tempScannedText = txt;
-                document.getElementById('final-code').value = txt;
-                html5QrCode.pause();
-                captureFrame();
-                changeStep(2);
-            }
-        }).catch(err => alert("Camera Error. Please refresh."));
+        try {
+            html5QrCode = new Html5Qrcode("reader");
+            await html5QrCode.start({ facingMode: "environment" }, config, (txt) => {
+                if (mode !== 'gc') {
+                    tempScannedText = txt;
+                    document.getElementById('final-code').value = txt;
+                    html5QrCode.pause();
+                    captureFrame();
+                    changeStep(2);
+                }
+            });
+        } catch (err) {
+            alert("Camera failed to start. Ensure permissions are granted.");
+            stopScanner();
+        }
     }
 
     function manualSnap() {
-        html5QrCode.pause();
-        captureFrame();
-        changeStep(2);
+        if(html5QrCode) {
+            html5QrCode.pause();
+            captureFrame();
+            changeStep(2);
+        }
     }
 
     function captureFrame() {
@@ -200,11 +206,11 @@
         if(!video) return;
 
         const isSquare = (currentMode === 'act');
-        canvas.width = isSquare ? 400 : 600;
-        canvas.height = isSquare ? 400 : 250;
+        canvas.width = isSquare ? 500 : 600;
+        canvas.height = isSquare ? 500 : 250;
         
         const ctx = canvas.getContext('2d'), vW = video.videoWidth, vH = video.videoHeight;
-        const cropW = isSquare ? (vH * 0.7) : (vW * 0.85);
+        const cropW = isSquare ? (vH * 0.75) : (vW * 0.85);
         const cropH = isSquare ? cropW : (cropW / 2.5);
         const startX = (vW - cropW) / 2, startY = (vH * 0.45) - (cropH / 2);
         
@@ -214,11 +220,22 @@
 
     async function processPreview() {
         const final = document.getElementById('final-code');
+        const btn = document.getElementById('btn-process');
+        
         if (currentMode === 'gc') {
-            final.value = "Reading Text...";
+            btn.innerText = "READING...";
+            btn.disabled = true;
+            try {
+                if (!worker) worker = await Tesseract.createWorker('eng');
+                const { data: { text } } = await worker.recognize(document.getElementById('hidden-canvas'));
+                final.value = text.replace(/[^A-Z0-9-]/gi, '').trim();
+            } catch (e) {
+                alert("OCR Error. Please type manually.");
+                final.value = "";
+            }
+            btn.innerText = "PROCESS CODE";
+            btn.disabled = false;
             changeStep(3);
-            const { data: { text } } = await worker.recognize(document.getElementById('hidden-canvas'));
-            final.value = text.replace(/[^A-Z0-9-]/gi, '').trim();
         } else {
             final.value = tempScannedText;
             changeStep(3);
@@ -259,7 +276,9 @@
         const year = document.getElementById('yearFilter').value;
         let total = 0;
         document.querySelectorAll('.item-card').forEach(card => {
-            const dt = card.querySelector('.d-date').value, price = parseFloat(card.querySelector('.d-price').value) || 0, disc = parseFloat(card.querySelector('.d-disc').value) || 0;
+            const dt = card.querySelector('.d-date').value, 
+                  price = parseFloat(card.querySelector('.d-price').value) || 0, 
+                  disc = parseFloat(card.querySelector('.d-disc').value) || 0;
             const net = price - (price * (disc / 100)), saved = price - net;
             card.querySelector('.d-net').value = net.toFixed(2);
             card.querySelector('.d-save').innerText = `Save: ₹${saved.toFixed(2)}`;
@@ -280,7 +299,7 @@
 
     function exportData() {
         const blob = new Blob([localStorage.getItem(DB_KEY)], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Tracker_Export.json`; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Tracker_Data.json`; a.click();
     }
 
     function importData(event) {
