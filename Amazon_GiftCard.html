@@ -3,120 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker Pro</title>
+    <title>Gift Card Tracker Lens Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        :root { --primary: #2563eb; --secondary: #0f172a; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; }
+        :root { --primary: #4285F4; --success: #34A853; --bg: #f8fafc; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; }
         
-        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        /* Dashboard Header */
+        .top-dash { position: sticky; top: 0; z-index: 100; background: #fff; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
         .inr-text { font-size: 1.5rem; font-weight: 800; color: var(--success); }
 
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
-        .item-card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .item-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         
-        .btn-del { position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; z-index: 10; }
         .full-width { grid-column: span 2; }
-        label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 5px; }
-        input, select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; }
+        label { font-size: 10px; font-weight: 700; color: #70757a; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 14px; }
         
-        .scan-group { display: flex; gap: 6px; }
-        .btn-scan { background: var(--secondary); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; font-size: 16px; }
+        .scan-group { display: flex; gap: 8px; }
+        .btn-scan { background: #f1f3f4; border: 1px solid #dadce0; padding: 0 14px; border-radius: 8px; cursor: pointer; font-size: 18px; }
 
-        /* SCANNER FIXES */
-        #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
-        #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
+        /* LENS INTERFACE */
+        #lens-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
+        #reader { width: 100%; flex-grow: 1; position: relative; }
         
-        .scan-window { 
+        .lens-reticle { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 320px; height: 100px; border: 4px solid var(--success); 
-            border-radius: 8px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); 
-            z-index: 100; pointer-events: none; 
+            width: 300px; height: 100px; border: 2px solid rgba(255,255,255,0.5); 
+            border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); z-index: 100;
         }
-        
-        #snap-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; display: none; background: black; z-index: 150; }
+        .lens-corner { position: absolute; width: 25px; height: 25px; border: 4px solid var(--primary); z-index: 101; border-radius: 4px; }
+        .tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
+        .tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
+        .bl { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
+        .br { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
 
-        .scanner-footer { background: #000; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; color: white; z-index: 200; }
-        .btn-action { width: 85%; padding: 15px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
-        .btn-capture { background: var(--success); color: white; }
-        .btn-confirm { background: var(--primary); color: white; }
-        .btn-retake { background: #444; color: white; }
+        .lens-footer { background: #fff; padding: 25px; display: flex; flex-direction: column; align-items: center; border-radius: 24px 24px 0 0; }
+        .shutter-btn { width: 65px; height: 65px; background: #fff; border: 4px solid #dadce0; border-radius: 50%; padding: 4px; cursor: pointer; }
+        .shutter-inner { width: 100%; height: 100%; background: var(--primary); border-radius: 50%; }
 
-        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; justify-content: space-around; border-top: 1px solid #e2e8f0; z-index: 100; }
+        .confirm-box { display: none; width: 100%; text-align: center; }
+        .result-input { width: 90%; font-size: 24px; font-weight: bold; text-align: center; padding: 12px; border: 2px solid var(--primary); border-radius: 12px; margin-bottom: 15px; color: var(--primary); }
+
+        .btn-apply { background: var(--primary); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-weight: bold; width: 90%; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="top-dash">
-    <div><div style="font-size: 10px; font-weight: bold; color: #94a3b8;">YEARLY NET TOTAL</div><div class="inr-text" id="totalINR">₹0.00</div></div>
+    <div style="font-size: 11px; font-weight: 700; color: #70757a;">YEARLY NET TOTAL</div>
+    <div class="inr-text" id="totalINR">₹0.00</div>
 </div>
 
 <div class="container">
-    <select id="yearFilter" onchange="refresh()" style="width: auto; margin-bottom: 15px; font-weight: bold;"></select>
+    <select id="yearFilter" onchange="refresh()" style="width: auto; margin-bottom: 15px; font-weight: bold; padding: 8px; border-radius: 8px;"></select>
     <div id="expenseList"></div>
 </div>
 
-<div id="scanner-overlay">
+<div id="lens-overlay">
     <div id="reader">
-        <div class="scan-window"></div>
-        <canvas id="snap-preview"></canvas>
+        <div class="lens-reticle">
+            <div class="lens-corner tl"></div><div class="lens-corner tr"></div>
+            <div class="lens-corner bl"></div><div class="lens-corner br"></div>
+        </div>
     </div>
-    <div class="scanner-footer">
-        <div id="scan-status" style="font-weight: bold;">Camera Initializing...</div>
-        <div style="width: 80%; display: flex; align-items: center; gap: 10px;">
-            <span style="font-size:10px">ZOOM</span>
-            <input type="range" id="zoomCtrl" min="1" max="5" step="0.1" value="1" style="flex-grow:1">
-        </div>
+    <div class="lens-footer">
+        <div id="lens-status" style="margin-bottom: 15px; font-weight: 600; color: #5f6368;">Align code inside corners</div>
         
-        <button id="capBtn" class="btn-action btn-capture" onclick="captureAndScan()">📷 CAPTURE</button>
-        
-        <div id="confirmGroup" style="display:none; width: 100%; flex-direction: column; align-items: center; gap: 10px;">
-            <input type="text" id="edit-result" style="width: 85%; text-align: center; font-size: 20px; padding: 10px; background: #222; color: #10b981; border: 1px solid #444;">
-            <button class="btn-action btn-confirm" onclick="commitScan()">✅ SAVE CODE</button>
-            <button class="btn-action btn-retake" onclick="resetScanner()">🔄 RETAKE</button>
+        <div id="shutter-group">
+            <div class="shutter-btn" onclick="takeSnapshot()"><div class="shutter-inner"></div></div>
         </div>
-        <button onclick="stopScanner()" style="background:none; border:none; color:#999; margin-top: 5px;">CANCEL</button>
+
+        <div class="confirm-box" id="confirm-box">
+            <input type="text" id="edit-result" class="result-input">
+            <button class="btn-apply" onclick="applyCode()">USE THIS CODE</button>
+            <button onclick="resetLens()" style="background:none; border:none; color:#5f6368; margin-top:15px; font-weight:bold; cursor:pointer;">Retake</button>
+        </div>
+
+        <button onclick="stopLens()" style="background:none; border:none; color:#999; margin-top: 15px; cursor:pointer;">Exit</button>
     </div>
 </div>
 
-<div class="bottom-actions">
-    <button onclick="document.getElementById('importFile').click()" style="background:none; border:none; color:#64748b; font-weight:bold;">Import</button>
-    <button onclick="addNew()" style="background:var(--primary); color:white; border:none; padding:12px 30px; border-radius:50px; font-weight:bold;">＋ Add Entry</button>
-    <button onclick="exportData()" style="background:none; border:none; color:#64748b; font-weight:bold;">Export</button>
+<div style="position: fixed; bottom: 20px; width: 100%; display: flex; justify-content: center;">
+    <button onclick="addNew()" style="background:var(--primary); color:white; border:none; padding: 15px 40px; border-radius: 50px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">＋ Add New Record</button>
 </div>
-
-<input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Amazon_Tracker_V11_Stable";
-    let html5QrCode = null;
-    let currentInput = null;
-    let videoTrack = null;
-    let tesseractWorker = null;
+    const DB_NAME = "LensTracker_v12";
+    let scanner = null;
+    let targetInput = null;
+    let worker = null;
 
-    // Load AI Worker early to prevent "Processing" hang
-    async function loadWorker() {
-        if (!tesseractWorker) {
-            tesseractWorker = await Tesseract.createWorker('eng');
-        }
-    }
-
-    function init() {
-        const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-        document.getElementById('expenseList').innerHTML = "";
-        
+    async function init() {
+        const saved = JSON.parse(localStorage.getItem(DB_NAME)) || [];
         const yf = document.getElementById('yearFilter');
         const cy = new Date().getFullYear();
-        yf.innerHTML = "";
-        for(let i=cy-2; i<=cy+2; i++) {
+        for(let i=cy-2; i<=cy+1; i++) {
             let o = document.createElement('option'); o.value = i; o.innerText = i;
             if(i === cy) o.selected = true; yf.appendChild(o);
         }
-
         if(saved.length === 0) addNew(); else saved.forEach(s => addNew(s));
         refresh();
-        loadWorker();
+        
+        // Pre-load AI worker
+        worker = await Tesseract.createWorker('eng');
     }
 
     function addNew(data = {}) {
@@ -125,97 +116,86 @@
         div.className = "item-card";
         div.dataset.id = id;
         div.innerHTML = `
-            <button class="btn-del" onclick="this.parentElement.remove(); save(); refresh();">✕</button>
+            <button style="position:absolute; top:10px; right:10px; border:none; background:none; color:red; cursor:pointer;" onclick="this.parentElement.remove(); save();">✕</button>
             <div><label>Date</label><input type="date" class="d-date" value="${data.date || ''}" onchange="save(); refresh();"></div>
             <div class="full-width"><label>Description</label><input type="text" class="d-item" value="${data.item || ''}" oninput="save();"></div>
-            <div><label>Ref ID</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="openScanner(this)">📷</button></div></div>
+            <div><label>Ref ID</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="startLens(this)">📷</button></div></div>
             <div><label>Price (₹)</label><input type="number" class="d-price" value="${data.price || ''}" oninput="save(); refresh();"></div>
             <div><label>Disc %</label><input type="number" class="d-disc" value="${data.disc || ''}" oninput="save(); refresh();"></div>
-            <div><label>Gift Code</label><div class="scan-group"><input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();"><button class="btn-scan" onclick="openScanner(this)">📷</button></div></div>
-            <div><label>Redeemed?</label><select class="d-redeemed" onchange="save();">
-                <option value="No" ${data.redeemed === 'No' ? 'selected' : ''}>No</option>
-                <option value="Yes" ${data.redeemed === 'Yes' ? 'selected' : ''}>Yes</option>
-            </select></div>
+            <div><label>Gift Code</label><div class="scan-group"><input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();"><button class="btn-scan" onclick="startLens(this)">📷</button></div></div>
+            <div><label>Redeemed</label><select class="d-status" onchange="save();"><option ${data.status=='No'?'selected':''}>No</option><option ${data.status=='Yes'?'selected':''}>Yes</option></select></div>
         `;
         document.getElementById('expenseList').appendChild(div);
     }
 
-    async function openScanner(btn) {
-        currentInput = btn.parentElement.querySelector('input');
-        document.getElementById('scanner-overlay').style.display = 'flex';
-        resetScanner();
-
-        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-
-        try {
-            await html5QrCode.start({ facingMode: "environment" }, { fps: 20 }, () => {});
-            videoTrack = html5QrCode.getRunningTrack();
-            const caps = videoTrack.getCapabilities();
-            const zoom = document.getElementById('zoomCtrl');
-            if(caps.zoom) {
-                zoom.min = caps.zoom.min; zoom.max = caps.zoom.max;
-                zoom.oninput = () => videoTrack.applyConstraints({ advanced: [{ zoom: zoom.value }] });
-            }
-            document.getElementById('scan-status').innerText = "Align code & Tap Capture";
-        } catch (e) {
-            document.getElementById('scan-status').innerText = "Camera Error";
-        }
+    async function startLens(btn) {
+        targetInput = btn.parentElement.querySelector('input');
+        document.getElementById('lens-overlay').style.display = 'flex';
+        resetLens();
+        if (!scanner) scanner = new Html5Qrcode("reader");
+        await scanner.start({ facingMode: "environment" }, { fps: 20 }, () => {});
     }
 
-    async function captureAndScan() {
-        document.getElementById('scan-status').innerText = "Analysing Text...";
+    async function takeSnapshot() {
+        document.getElementById('lens-status').innerText = "Reading with AI...";
         const video = document.querySelector('video');
-        const canvas = document.getElementById('snap-preview');
+        
+        // 1. Capture and Crop
+        const canvas = document.createElement('canvas');
+        canvas.width = 800; canvas.height = 300;
         const ctx = canvas.getContext('2d');
+        // Crop the center box area specifically
+        ctx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.4, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 800, 300);
 
-        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-        canvas.style.display = 'block';
-        
-        // CROP AND ENHANCE
-        const crop = document.createElement('canvas');
-        crop.width = 1000; crop.height = 400;
-        const cropCtx = crop.getContext('2d');
-        
-        // Draw the center section
-        cropCtx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.4, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 1000, 400);
-
-        // Simple enhancement: Grayscale
-        const imgData = cropCtx.getImageData(0,0,1000,400);
+        // 2. IMAGE ENHANCEMENT (The "Lens" Secret)
+        const imgData = ctx.getImageData(0, 0, 800, 300);
         for (let i = 0; i < imgData.data.length; i += 4) {
-            const avg = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
-            imgData.data[i] = imgData.data[i+1] = imgData.data[i+2] = avg > 128 ? 255 : 0; // High contrast
+            // Thresholding: Turn gray to pure black or pure white
+            const v = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
+            const threshold = v > 120 ? 255 : 0;
+            imgData.data[i] = imgData.data[i+1] = imgData.data[i+2] = threshold;
         }
-        cropCtx.putImageData(imgData, 0, 0);
+        ctx.putImageData(imgData, 0, 0);
 
+        // 3. OCR
         try {
-            await loadWorker(); // Ensure worker is ready
-            const { data: { text } } = await tesseractWorker.recognize(crop);
-            document.getElementById('edit-result').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
-            document.getElementById('capBtn').style.display = 'none';
-            document.getElementById('confirmGroup').style.display = 'flex';
-            document.getElementById('scan-status').innerText = "Scan Complete";
-        } catch (e) { 
-            alert("Scan failed. Try again.");
-            resetScanner(); 
+            const { data: { text } } = await worker.recognize(canvas);
+            const clean = text.replace(/[^A-Z0-9-]/gi, '').trim();
+            
+            document.getElementById('edit-result').value = clean;
+            document.getElementById('shutter-group').style.display = 'none';
+            document.getElementById('confirm-box').style.display = 'block';
+            document.getElementById('lens-status').innerText = "Verify Detected Code";
+        } catch (e) {
+            document.getElementById('lens-status').innerText = "Failed. Try again.";
         }
     }
 
-    function commitScan() {
-        currentInput.value = document.getElementById('edit-result').value;
-        stopScanner(); save();
+    function applyCode() {
+        targetInput.value = document.getElementById('edit-result').value;
+        stopLens();
+        save();
     }
 
-    function resetScanner() {
-        document.getElementById('snap-preview').style.display = 'none';
-        document.getElementById('capBtn').style.display = 'block';
-        document.getElementById('confirmGroup').style.display = 'none';
-        document.getElementById('scan-status').innerText = "Align code & Tap Capture";
+    function resetLens() {
+        document.getElementById('shutter-group').style.display = 'block';
+        document.getElementById('confirm-box').style.display = 'none';
+        document.getElementById('lens-status').innerText = "Align code inside corners";
     }
 
-    async function stopScanner() {
-        if (html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
-        document.getElementById('scanner-overlay').style.display = 'none';
+    async function stopLens() {
+        if (scanner) await scanner.stop();
+        document.getElementById('lens-overlay').style.display = 'none';
+    }
+
+    function save() {
+        const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
+            id: c.dataset.id, date: c.querySelector('.d-date').value,
+            item: c.querySelector('.d-item').value, ref: c.querySelector('.d-ref').value,
+            price: c.querySelector('.d-price').value, disc: c.querySelector('.d-disc').value,
+            gccode: c.querySelector('.d-gccode').value, status: c.querySelector('.d-status').value
+        }));
+        localStorage.setItem(DB_NAME, JSON.stringify(list));
     }
 
     function refresh() {
@@ -231,27 +211,6 @@
             } else { card.style.display = "none"; }
         });
         document.getElementById('totalINR').innerText = `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-    }
-
-    function save() {
-        const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
-            id: c.dataset.id, date: c.querySelector('.d-date').value,
-            item: c.querySelector('.d-item').value, ref: c.querySelector('.d-ref').value,
-            price: c.querySelector('.d-price').value, disc: c.querySelector('.d-disc').value,
-            gccode: c.querySelector('.d-gccode').value, redeemed: c.querySelector('.d-redeemed').value
-        }));
-        localStorage.setItem(DB_KEY, JSON.stringify(list));
-    }
-
-    function exportData() {
-        const blob = new Blob([localStorage.getItem(DB_KEY)], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-        a.download = `GC_Tracker_Export.json`; a.click();
-    }
-
-    function importData(e) {
-        const r = new FileReader(); r.onload = () => { localStorage.setItem(DB_KEY, r.result); init(); };
-        r.readAsText(e.target.files[0]);
     }
 
     window.onload = init;
