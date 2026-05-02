@@ -24,14 +24,13 @@
         .scan-group { display: flex; gap: 6px; }
         .btn-scan { background: var(--secondary); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; font-size: 16px; }
 
-        /* --- SCANNER UI FIXES --- */
+        /* SCANNER FIXES */
         #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
         #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
         
-        /* The Visual Pointer Box */
         .scan-window { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 300px; height: 100px; border: 4px solid var(--success); 
+            width: 320px; height: 100px; border: 4px solid var(--success); 
             border-radius: 8px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); 
             z-index: 100; pointer-events: none; 
         }
@@ -64,7 +63,7 @@
         <canvas id="snap-preview"></canvas>
     </div>
     <div class="scanner-footer">
-        <div id="scan-status" style="font-weight: bold;">Align code & Tap Capture</div>
+        <div id="scan-status" style="font-weight: bold;">Camera Initializing...</div>
         <div style="width: 80%; display: flex; align-items: center; gap: 10px;">
             <span style="font-size:10px">ZOOM</span>
             <input type="range" id="zoomCtrl" min="1" max="5" step="0.1" value="1" style="flex-grow:1">
@@ -94,6 +93,14 @@
     let html5QrCode = null;
     let currentInput = null;
     let videoTrack = null;
+    let tesseractWorker = null;
+
+    // Load AI Worker early to prevent "Processing" hang
+    async function loadWorker() {
+        if (!tesseractWorker) {
+            tesseractWorker = await Tesseract.createWorker('eng');
+        }
+    }
 
     function init() {
         const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
@@ -109,6 +116,7 @@
 
         if(saved.length === 0) addNew(); else saved.forEach(s => addNew(s));
         refresh();
+        loadWorker();
     }
 
     function addNew(data = {}) {
@@ -140,24 +148,22 @@
         if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
 
         try {
-            // TRY FORCING BACK CAMERA FIRST
-            await html5QrCode.start({ facingMode: { exact: "environment" } }, { fps: 20 }, () => {});
-        } catch (e) {
-            // FALLBACK TO ANY BACK CAMERA
             await html5QrCode.start({ facingMode: "environment" }, { fps: 20 }, () => {});
-        }
-
-        videoTrack = html5QrCode.getRunningTrack();
-        const caps = videoTrack.getCapabilities();
-        const zoom = document.getElementById('zoomCtrl');
-        if(caps.zoom) {
-            zoom.min = caps.zoom.min; zoom.max = caps.zoom.max;
-            zoom.oninput = () => videoTrack.applyConstraints({ advanced: [{ zoom: zoom.value }] });
+            videoTrack = html5QrCode.getRunningTrack();
+            const caps = videoTrack.getCapabilities();
+            const zoom = document.getElementById('zoomCtrl');
+            if(caps.zoom) {
+                zoom.min = caps.zoom.min; zoom.max = caps.zoom.max;
+                zoom.oninput = () => videoTrack.applyConstraints({ advanced: [{ zoom: zoom.value }] });
+            }
+            document.getElementById('scan-status').innerText = "Align code & Tap Capture";
+        } catch (e) {
+            document.getElementById('scan-status').innerText = "Camera Error";
         }
     }
 
     async function captureAndScan() {
-        document.getElementById('scan-status').innerText = "Processing Text...";
+        document.getElementById('scan-status').innerText = "Analysing Text...";
         const video = document.querySelector('video');
         const canvas = document.getElementById('snap-preview');
         const ctx = canvas.getContext('2d');
@@ -166,19 +172,33 @@
         ctx.drawImage(video, 0, 0);
         canvas.style.display = 'block';
         
-        // CROP CENTER AREA FOR OCR
+        // CROP AND ENHANCE
         const crop = document.createElement('canvas');
-        crop.width = 800; crop.height = 300;
+        crop.width = 1000; crop.height = 400;
         const cropCtx = crop.getContext('2d');
-        cropCtx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.4, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 800, 300);
+        
+        // Draw the center section
+        cropCtx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.4, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 1000, 400);
+
+        // Simple enhancement: Grayscale
+        const imgData = cropCtx.getImageData(0,0,1000,400);
+        for (let i = 0; i < imgData.data.length; i += 4) {
+            const avg = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
+            imgData.data[i] = imgData.data[i+1] = imgData.data[i+2] = avg > 128 ? 255 : 0; // High contrast
+        }
+        cropCtx.putImageData(imgData, 0, 0);
 
         try {
-            const { data: { text } } = await Tesseract.recognize(crop, 'eng');
+            await loadWorker(); // Ensure worker is ready
+            const { data: { text } } = await tesseractWorker.recognize(crop);
             document.getElementById('edit-result').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
             document.getElementById('capBtn').style.display = 'none';
             document.getElementById('confirmGroup').style.display = 'flex';
-            document.getElementById('scan-status').innerText = "Check the code below";
-        } catch (e) { resetScanner(); }
+            document.getElementById('scan-status').innerText = "Scan Complete";
+        } catch (e) { 
+            alert("Scan failed. Try again.");
+            resetScanner(); 
+        }
     }
 
     function commitScan() {
