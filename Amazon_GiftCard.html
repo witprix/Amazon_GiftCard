@@ -16,53 +16,61 @@
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
         .item-card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         
-        /* DELETE BUTTON */
-        .btn-del { position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; }
+        .btn-del { position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 14px; z-index: 10; }
         
         .full-width { grid-column: span 2; }
         label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 5px; }
-        input, select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; }
+        input, select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
         
         .scan-group { display: flex; gap: 6px; }
-        .btn-scan { background: var(--secondary); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; font-size: 16px; }
+        .btn-scan { background: var(--secondary); color: white; border: none; padding: 0 12px; border-radius: 8px; cursor: pointer; }
 
-        /* SCANNER UI */
+        /* SCANNER UI ENHANCEMENTS */
         #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
-        #reader { width: 100%; flex-grow: 1; }
-        .scanner-footer { height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; color: white; gap: 10px; }
-        .btn-close { background: white; color: black; border: none; padding: 10px 40px; border-radius: 50px; font-weight: bold; }
+        #reader { width: 100%; flex-grow: 1; position: relative; }
+        
+        /* THE SELECTION AREA GUIDE */
+        .scan-region-highlight {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px; height: 80px;
+            border: 3px solid var(--success);
+            border-radius: 8px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.5);
+            z-index: 10000; pointer-events: none;
+        }
 
-        /* FOOTER */
+        .scanner-footer { height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; color: white; gap: 10px; z-index: 10001; }
+        .btn-close { background: white; color: black; border: none; padding: 12px 40px; border-radius: 50px; font-weight: bold; }
+
         .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; justify-content: space-around; border-top: 1px solid #e2e8f0; z-index: 100; }
         .btn-footer { border: none; background: none; font-weight: 700; color: #64748b; cursor: pointer; display: flex; flex-direction: column; align-items: center; font-size: 11px; }
-        .btn-main { background: var(--primary); color: white; padding: 12px 30px; border-radius: 50px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 10px rgba(37,99,235,0.3); }
+        .btn-main { background: var(--primary); color: white; padding: 12px 30px; border-radius: 50px; }
     </style>
 </head>
 <body>
 
 <div class="top-dash">
-    <div style="font-size: 10px; font-weight: bold; color: #94a3b8;">YEARLY NET TOTAL</div>
-    <div class="inr-text" id="totalINR">₹0.00</div>
+    <div><div style="font-size: 10px; font-weight: bold; color: #94a3b8;">YEARLY NET</div><div class="inr-text" id="totalINR">₹0.00</div></div>
 </div>
 
 <div class="container">
-    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-        <select id="yearFilter" onchange="refresh()" style="width: auto; font-weight: bold;"></select>
-    </div>
+    <div style="margin-bottom: 15px;"><select id="yearFilter" onchange="refresh()"></select></div>
     <div id="expenseList"></div>
 </div>
 
 <div id="scanner-overlay">
-    <div id="reader"></div>
+    <div id="reader">
+        <div class="scan-region-highlight" id="scanGuide"></div>
+    </div>
     <div class="scanner-footer">
-        <div id="scan-status">Scanning...</div>
+        <div id="scan-status" style="text-align:center; padding: 0 10px;">Align code inside the box</div>
         <button class="btn-close" onclick="stopScanner()">CANCEL</button>
     </div>
 </div>
 
 <div class="bottom-actions">
     <button class="btn-footer" onclick="document.getElementById('importFile').click()"><span>📥</span><span>Import</span></button>
-    <button class="btn-footer btn-main" onclick="addNew()" style="color: white;"><span>＋</span><span>Add Entry</span></button>
+    <button class="btn-footer btn-main" onclick="addNew()"><span>＋</span><span>Add Entry</span></button>
     <button class="btn-footer" onclick="exportData()"><span>📤</span><span>Export</span></button>
 </div>
 
@@ -72,12 +80,11 @@
     const DB_KEY = "Tracker_Final_Live_V8";
     let html5QrCode = null;
     let currentInput = null;
+    let isProcessingOCR = false;
 
     function init() {
         const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         document.getElementById('expenseList').innerHTML = "";
-        if(saved.length === 0) addNew();
-        else saved.forEach(s => addNew(s));
         
         const yf = document.getElementById('yearFilter');
         const cy = new Date().getFullYear();
@@ -86,6 +93,9 @@
             let o = document.createElement('option'); o.value = i; o.innerText = i;
             if(i === cy) o.selected = true; yf.appendChild(o);
         }
+
+        if(saved.length === 0) addNew();
+        else saved.forEach(s => addNew(s));
         refresh();
     }
 
@@ -98,65 +108,83 @@
             <button class="btn-del" onclick="deleteRecord(${id})">✕</button>
             <div><label>Date</label><input type="date" class="d-date" value="${data.date || ''}" onchange="save(); refresh();"></div>
             <div class="full-width"><label>Description</label><input type="text" class="d-item" value="${data.item || ''}" oninput="save();"></div>
-            <div>
-                <label>Ref ID</label>
-                <div class="scan-group">
-                    <input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();">
-                    <button class="btn-scan" onclick="startScanner(this, 'barcode')">📷</button>
-                </div>
-            </div>
+            <div><label>Ref ID</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="startScanner(this, 'barcode')">📷</button></div></div>
             <div><label>Price (₹)</label><input type="number" class="d-price" value="${data.price || ''}" oninput="save(); refresh();"></div>
             <div><label>Disc %</label><input type="number" class="d-disc" value="${data.disc || ''}" oninput="save(); refresh();"></div>
-            <div>
-                <label>Gift Code</label>
-                <div class="scan-group">
-                    <input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();">
-                    <button class="btn-scan" onclick="startScanner(this, 'text')">📷</button>
-                </div>
-            </div>
-            <div><label>Redeemed?</label><select class="d-redeemed" onchange="save();">
-                <option value="No" ${data.redeemed === 'No' ? 'selected' : ''}>No</option>
-                <option value="Yes" ${data.redeemed === 'Yes' ? 'selected' : ''}>Yes</option>
-            </select></div>
+            <div><label>Gift Code</label><div class="scan-group"><input type="text" class="d-gccode" value="${data.gccode || ''}" oninput="save();"><button class="btn-scan" onclick="startScanner(this, 'text')">📷</button></div></div>
+            <div><label>Redeemed?</label><select class="d-redeemed" onchange="save();"><option value="No" ${data.redeemed === 'No' ? 'selected' : ''}>No</option><option value="Yes" ${data.redeemed === 'Yes' ? 'selected' : ''}>Yes</option></select></div>
         `;
         document.getElementById('expenseList').appendChild(div);
-    }
-
-    function deleteRecord(id) {
-        if(confirm("Permanently delete this record?")) {
-            document.querySelector(`[data-id="${id}"]`).remove();
-            save(); refresh();
-        }
     }
 
     async function startScanner(btn, mode) {
         currentInput = btn.parentElement.querySelector('input');
         document.getElementById('scanner-overlay').style.display = 'flex';
-        document.getElementById('scan-status').innerText = mode === 'barcode' ? "Point at Barcode/QR" : "Point at Code (Reading Text...)";
-
+        const status = document.getElementById('scan-status');
+        
         if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
 
         try {
+            const config = { fps: 10, qrbox: { width: 280, height: 80 } };
+            
             if (mode === 'barcode') {
-                await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+                document.getElementById('scanGuide').style.borderColor = "#2563eb";
+                await html5QrCode.start({ facingMode: "environment" }, config, (text) => {
                     currentInput.value = text; stopScanner(); save();
                 });
             } else {
-                // Text OCR Mode
-                await html5QrCode.start({ facingMode: "environment" }, { fps: 5 }, async () => {
-                    const canvas = html5QrCode.getCanvas();
-                    const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
-                    if (text.trim().length > 5) {
-                        currentInput.value = text.trim(); stopScanner(); save();
-                    }
+                // TEXT OCR MODE with Cropping logic
+                document.getElementById('scanGuide').style.borderColor = "#10b981";
+                await html5QrCode.start({ facingMode: "environment" }, { fps: 4 }, async () => {
+                    if (isProcessingOCR) return;
+                    isProcessingOCR = true;
+                    status.innerText = "Processing Text...";
+                    
+                    try {
+                        const video = document.querySelector('#reader video');
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Crop logic: Take the center 60% of the video feed
+                        canvas.width = video.videoWidth * 0.6;
+                        canvas.height = video.videoHeight * 0.2;
+                        ctx.drawImage(video, video.videoWidth*0.2, video.videoHeight*0.4, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+                        
+                        const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
+                        const cleanText = text.replace(/[^A-Z0-9]/gi, '').trim();
+                        
+                        if (cleanText.length >= 8) {
+                            currentInput.value = cleanText;
+                            stopScanner();
+                            save();
+                        } else {
+                            status.innerText = "Searching for code...";
+                        }
+                    } catch (e) { console.error(e); }
+                    isProcessingOCR = false;
                 });
             }
-        } catch (err) { alert("Camera failed. Use HTTPS."); stopScanner(); }
+        } catch (err) { alert("Camera error. Ensure HTTPS."); stopScanner(); }
     }
 
     async function stopScanner() {
         if (html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
         document.getElementById('scanner-overlay').style.display = 'none';
+        isProcessingOCR = false;
+    }
+
+    function save() {
+        const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
+            id: c.dataset.id,
+            date: c.querySelector('.d-date').value,
+            item: c.querySelector('.d-item').value,
+            ref: c.querySelector('.d-ref').value,
+            price: c.querySelector('.d-price').value,
+            disc: c.querySelector('.d-disc').value,
+            gccode: c.querySelector('.d-gccode').value,
+            redeemed: c.querySelector('.d-redeemed').value
+        }));
+        localStorage.setItem(DB_KEY, JSON.stringify(list));
     }
 
     function refresh() {
@@ -174,25 +202,19 @@
         document.getElementById('totalINR').innerText = `₹${total.toLocaleString('en-IN')}`;
     }
 
-    function save() {
-        const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
-            id: c.dataset.id,
-            date: c.querySelector('.d-date').value,
-            item: c.querySelector('.d-item').value,
-            ref: c.querySelector('.d-ref').value,
-            price: c.querySelector('.d-price').value,
-            disc: c.querySelector('.d-disc').value,
-            gccode: c.querySelector('.d-gccode').value,
-            redeemed: c.querySelector('.d-redeemed').value
-        }));
-        localStorage.setItem(DB_KEY, JSON.stringify(list));
+    function deleteRecord(id) {
+        if(confirm("Delete this?")) {
+            document.querySelector(`[data-id="${id}"]`).remove();
+            save(); refresh();
+        }
     }
 
     function exportData() {
-        const blob = new Blob([localStorage.getItem(DB_KEY)], {type: 'application/json'});
+        const data = localStorage.getItem(DB_KEY);
+        const blob = new Blob([data], {type: 'application/json'});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `Backup.json`;
+        a.download = `GC_Backup_${new Date().toLocaleDateString()}.json`;
         a.click();
     }
 
