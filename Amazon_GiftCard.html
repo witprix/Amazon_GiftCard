@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Separated Logics</title>
+    <title>Gift Card Tracker - Fixed Camera Isolation</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -28,23 +28,20 @@
         .btn-icon-scan { background: #f8fafc; border-left: 1px solid #e2e8f0; color: #64748b; padding: 8px 12px; cursor: pointer; }
         .btn-sms { background: #e8f0fe; border-left: 1px solid #cbd5e1; color: var(--primary); padding: 8px 12px; cursor: pointer; }
 
-        .savings-badge { font-size: 11px; font-weight: bold; color: var(--success); margin-top: 4px; display: block; }
-
         /* SCANNER OVERLAY */
         #scanner-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; flex-direction: column; }
-        #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
+        #reader { width: 100%; flex-grow: 1; background: #000; position: relative; }
         
-        /* Box shapes are fully separated in CSS */
         .scan-window { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); border: 2.5px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 10; pointer-events: none; }
         .rect-box { width: 280px; height: 100px; }
-        .square-box { width: 220px; height: 220px; }
+        .square-box { width: 240px; height: 240px; }
 
-        .scanner-footer { background: #fff; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 12px; border-radius: 24px 24px 0 0; z-index: 100; flex-shrink: 0; }
+        .scanner-footer { background: #fff; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 12px; border-radius: 24px 24px 0 0; z-index: 100; }
         .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 10px; }
         .active-step { display: flex; }
         
-        .preview-container { width: 100%; max-width: 280px; display: flex; justify-content: center; overflow: hidden; border-radius: 8px; border: 2px solid var(--primary); background: #000; }
-        #captured-img { max-width: 100%; max-height: 200px; object-fit: contain; }
+        .preview-container { width: 100%; max-width: 280px; height: 150px; overflow: hidden; border-radius: 8px; border: 2px solid var(--primary); background: #000; display: flex; align-items: center; justify-content: center; }
+        #captured-img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .result-box { width: 100%; text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); padding: 12px; background: #f1f5f9; border-radius: 10px; border: none; box-sizing: border-box; }
 
         .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 90; }
@@ -64,31 +61,33 @@
 <div class="container" id="expenseList"></div>
 
 <div id="scanner-overlay">
-    <div id="reader"><div id="scan-window" class="scan-window rect-box"></div></div>
+    <div id="reader">
+        <div id="scan-window" class="scan-window"></div>
+    </div>
     
     <div class="scanner-footer">
         <div id="step-1" class="scan-step active-step">
-            <span id="scan-hint" style="font-weight: 700; color: #1e293b;">Align Code</span>
+            <span id="scan-hint" style="font-weight: 700; color: #1e293b;">Initializing...</span>
             <div id="btn-snap" onclick="manualSnap()" style="width:60px; height:60px; background:var(--primary); border-radius:50%; display:none; align-items:center; justify-content:center; color:white;">
                 <i class="material-icons-round" style="font-size:32px">photo_camera</i>
             </div>
-            <button onclick="stopScanner()" style="background:none; border:none; color:#64748b; font-weight:bold;">CANCEL</button>
+            <button onclick="stopScanner()" style="background:#f1f5f9; border:none; color:#4b5563; padding:10px 24px; border-radius:20px; font-weight:bold;">CLOSE CAMERA</button>
         </div>
 
         <div id="step-2" class="scan-step">
-            <span style="font-weight: 700;">Preview</span>
+            <span style="font-weight: 700;">Confirm Image</span>
             <div class="preview-container"><canvas id="hidden-canvas" style="display:none;"></canvas><img id="captured-img" src=""></div>
             <div style="display:flex; gap:10px; width:100%;">
-                <button onclick="processPreview()" style="background:var(--primary); color:white; flex:2; border:none; padding:14px; border-radius:30px; font-weight:bold;">PROCESS</button>
+                <button onclick="processPreview()" style="background:var(--primary); color:white; flex:2; border:none; padding:14px; border-radius:30px; font-weight:bold;">EXTRACT DATA</button>
                 <button onclick="retakePhoto()" style="background:#f1f5f9; flex:1; border:none; border-radius:30px;"><i class="material-icons-round">refresh</i></button>
             </div>
         </div>
 
         <div id="step-3" class="scan-step">
-            <span style="font-weight: 700;">Confirm Data</span>
+            <span style="font-weight: 700;">Final Result</span>
             <input type="text" id="final-code" class="result-box">
             <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:14px; border-radius:30px; font-weight:bold;">SAVE TO LIST</button>
-            <button onclick="retakePhoto()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE</button>
+            <button onclick="retakePhoto()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE SCAN</button>
         </div>
     </div>
 </div>
@@ -101,7 +100,7 @@
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_Separated_V1";
+    const DB_KEY = "Tracker_Isolated_V2";
     let html5QrCode = null, activeInput = null, currentMode = '', worker = null, tempScannedText = "";
 
     async function init() {
@@ -124,101 +123,75 @@
             <div><label>Date</label><input type="date" class="d-date price-input" value="${data.date || ''}" onchange="save(); refresh();"></div>
             <div><label>Price (₹)</label><input type="number" class="d-price price-input" value="${data.price || ''}" oninput="save(); refresh();"></div>
             <div class="full-width"><label>Description</label><input type="text" class="d-item price-input" placeholder="Store Name" value="${data.item || ''}" oninput="save();"></div>
-            
-            <div class="full-width"><label>Ref ID (Barcode Logic)</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><div class="btn-icon-scan" onclick="startRefScan(this)"><i class="material-icons-round">barcode_scanner</i></div></div></div>
-            
-            <div class="full-width"><label>Gift Code (OCR Logic)</label><div class="scan-group"><input type="text" class="d-gc" value="${data.gc || ''}" oninput="save();"><div class="btn-icon-scan" onclick="startGCScan(this)"><i class="material-icons-round">photo_camera</i></div></div></div>
-
-            <div class="full-width"><label>Activation (QR Logic)</label><div class="scan-group"><input type="text" class="d-act" value="${data.act || ''}" oninput="save();"><div class="btn-icon-scan" onclick="startActScan(this)"><i class="material-icons-round">qr_code_2</i></div><div class="btn-sms" onclick="sendSMS(this)"><i class="material-icons-round">sms</i></div></div></div>
-            
+            <div class="full-width"><label>Ref ID (Barcode)</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}"><div class="btn-icon-scan" onclick="startScan(this, 'ref')"><i class="material-icons-round">barcode_scanner</i></div></div></div>
+            <div class="full-width"><label>Gift Code (OCR)</label><div class="scan-group"><input type="text" class="d-gc" value="${data.gc || ''}"><div class="btn-icon-scan" onclick="startScan(this, 'gc')"><i class="material-icons-round">photo_camera</i></div></div></div>
+            <div class="full-width"><label>Activation (QR)</label><div class="scan-group"><input type="text" class="d-act" value="${data.act || ''}"><div class="btn-icon-scan" onclick="startScan(this, 'act')"><i class="material-icons-round">qr_code_2</i></div><div class="btn-sms" onclick="sendSMS(this)"><i class="material-icons-round">sms</i></div></div></div>
             <div><label>Disc %</label><input type="number" class="d-disc price-input" value="${data.disc || ''}" oninput="save(); refresh();"></div>
-            <div><label>Net (₹)</label><input type="text" class="d-net price-input" readonly style="background:#f8fafc; color:var(--primary); font-weight:bold;"><span class="savings-badge d-save">Save: ₹0.00</span></div>
+            <div><label>Net (₹)</label><input type="text" class="d-net price-input" readonly><span class="savings-badge d-save">Save: ₹0.00</span></div>
             <div><label>Redeemed</label><select class="d-status price-input" onchange="save();"><option ${data.status=='No'?'selected':''}>No</option><option ${data.status=='Yes'?'selected':''}>Yes</option></select></div>
         `;
         document.getElementById('expenseList').appendChild(div);
         refresh();
     }
 
-    // ==========================================
-    // LOGIC 1: REF ID (BARCODE)
-    // ==========================================
-    async function startRefScan(btn) {
+    async function startScan(btn, mode) {
         activeInput = btn.parentElement.querySelector('input');
-        currentMode = 'ref';
-        await resetScannerUI("rect-box", "Point at Barcode", false);
+        currentMode = mode;
+        tempScannedText = "";
+        
+        // 1. Reset UI and cleanup camera
+        await cleanupCamera();
+        document.getElementById('scanner-overlay').style.display = 'flex';
+        changeStep(1);
 
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 280, height: 100 } }, (decodedText) => {
-            tempScannedText = decodedText;
-            html5QrCode.pause();
-            capturePreviewFrame(false); // Takes rectangle photo
-            changeStep(2);              // Moves to Preview Screen
-        }).catch(err => console.log(err));
-    }
+        const win = document.getElementById('scan-window');
+        const hint = document.getElementById('scan-hint');
+        const snap = document.getElementById('btn-snap');
 
-    // ==========================================
-    // LOGIC 2: GIFT CARD (OCR)
-    // ==========================================
-    async function startGCScan(btn) {
-        activeInput = btn.parentElement.querySelector('input');
-        currentMode = 'gc';
-        await resetScannerUI("rect-box", "Align Text & Snap", true);
+        // 2. Setup Mode Specifics
+        let config = { fps: 15 };
+        if (mode === 'act') {
+            win.className = "scan-window square-box";
+            hint.innerText = "Align QR Code";
+            snap.style.display = 'none';
+            config.qrbox = { width: 240, height: 240 };
+        } else {
+            win.className = "scan-window rect-box";
+            hint.innerText = (mode === 'gc') ? "Align Code & Snap" : "Align Barcode";
+            snap.style.display = (mode === 'gc') ? 'flex' : 'none';
+            config.qrbox = { width: 280, height: 100 };
+        }
 
-        // OCR logic doesn't auto-scan, relies on user clicking snap
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 280, height: 100 } }, () => {}).catch(err => console.log(err));
+        // 3. Start Camera
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode: "environment" }, config, (txt) => {
+            if (mode !== 'gc') {
+                tempScannedText = txt;
+                html5QrCode.pause();
+                captureFrame();
+                changeStep(2);
+            }
+        }).catch(err => alert("Camera Error: " + err));
     }
 
     function manualSnap() {
         html5QrCode.pause();
-        capturePreviewFrame(false); // Takes rectangle photo
-        changeStep(2);              // Moves to Preview Screen
+        captureFrame();
+        changeStep(2);
     }
 
-    // ==========================================
-    // LOGIC 3: ACTIVATION (QR)
-    // ==========================================
-    async function startActScan(btn) {
-        activeInput = btn.parentElement.querySelector('input');
-        currentMode = 'act';
-        // SQUARE BOX to guarantee the QR code isn't cut off!
-        await resetScannerUI("square-box", "Point at QR Code", false);
-
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 220, height: 220 } }, (decodedText) => {
-            tempScannedText = decodedText; // Preserves all spaces automatically
-            html5QrCode.pause();
-            capturePreviewFrame(true);  // Takes square photo
-            changeStep(2);              // Moves to Preview Screen
-        }).catch(err => console.log(err));
-    }
-
-    // ==========================================
-    // SHARED CAMERA HELPERS
-    // ==========================================
-    async function resetScannerUI(boxClass, hintText, showSnapBtn) {
-        document.getElementById('scanner-overlay').style.display = 'flex';
-        document.getElementById('scan-window').className = `scan-window ${boxClass}`;
-        document.getElementById('scan-hint').innerText = hintText;
-        document.getElementById('btn-snap').style.display = showSnapBtn ? 'flex' : 'none';
-        changeStep(1);
-
-        // Destroy previous instance completely to prevent bugs
-        if (html5QrCode) {
-            try { await html5QrCode.stop(); } catch(e) {}
-            html5QrCode.clear();
-        }
-        html5QrCode = new Html5Qrcode("reader");
-    }
-
-    function capturePreviewFrame(isSquare) {
+    function captureFrame() {
         const video = document.querySelector('#reader video');
         const canvas = document.getElementById('hidden-canvas');
         if(!video) return;
 
-        canvas.width = isSquare ? 300 : 560;
-        canvas.height = isSquare ? 300 : 200;
-        const ctx = canvas.getContext('2d'), vW = video.videoWidth, vH = video.videoHeight;
+        const isSquare = (currentMode === 'act');
+        canvas.width = isSquare ? 400 : 600;
+        canvas.height = isSquare ? 400 : 200;
         
-        const cropW = isSquare ? (vH * 0.5) : (vW * 0.8);
-        const cropH = isSquare ? cropW : (cropW / 2.8);
+        const ctx = canvas.getContext('2d'), vW = video.videoWidth, vH = video.videoHeight;
+        const cropW = isSquare ? (vH * 0.6) : (vW * 0.8);
+        const cropH = isSquare ? cropW : (cropW / 3);
         const startX = (vW - cropW) / 2, startY = (vH * 0.45) - (cropH / 2);
         
         ctx.drawImage(video, startX, startY, cropW, cropH, 0, 0, canvas.width, canvas.height);
@@ -226,51 +199,60 @@
     }
 
     async function processPreview() {
-        document.getElementById('final-code').value = "Processing...";
-        changeStep(3); // Move to confirm screen
-        
+        const final = document.getElementById('final-code');
+        changeStep(3);
         if (currentMode === 'gc') {
-            // Run Text Extraction (OCR)
+            final.value = "Reading...";
             const { data: { text } } = await worker.recognize(document.getElementById('hidden-canvas'));
-            document.getElementById('final-code').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
+            final.value = text.replace(/[^A-Z0-9-]/gi, '').trim();
         } else {
-            // Barcode & QR already saved their auto-scanned text
-            document.getElementById('final-code').value = tempScannedText;
+            final.value = tempScannedText;
         }
     }
 
-    function confirmToUI() { 
-        if(activeInput) { activeInput.value = document.getElementById('final-code').value; save(); refresh(); } 
-        stopScanner(); 
-    }
-
-    async function stopScanner() { 
-        if (html5QrCode && html5QrCode.isScanning) {
-            try { await html5QrCode.stop(); } catch(e) {}
+    async function cleanupCamera() {
+        if (html5QrCode) {
+            try {
+                if (html5QrCode.isScanning) await html5QrCode.stop();
+                html5QrCode.clear();
+            } catch (e) {}
+            html5QrCode = null;
         }
-        document.getElementById('scanner-overlay').style.display = 'none'; 
+        // Force DOM cleanup to prevent ghosting
+        const reader = document.getElementById('reader');
+        reader.innerHTML = '<div id="scan-window" class="scan-window"></div>';
     }
 
-    function retakePhoto() { 
-        if(html5QrCode) html5QrCode.resume(); 
+    function stopScanner() {
+        cleanupCamera();
+        document.getElementById('scanner-overlay').style.display = 'none';
+    }
+
+    function retakePhoto() {
+        if(html5QrCode) html5QrCode.resume();
         tempScannedText = "";
-        changeStep(1); 
+        changeStep(1);
     }
 
-    function changeStep(s) { 
-        document.querySelectorAll('.scan-step').forEach(el => el.classList.remove('active-step')); 
-        document.getElementById('step-' + s).classList.add('active-step'); 
+    function confirmToUI() {
+        if(activeInput) {
+            activeInput.value = document.getElementById('final-code').value;
+            save(); refresh();
+        }
+        stopScanner();
+    }
+
+    function changeStep(s) {
+        document.querySelectorAll('.scan-step').forEach(el => el.classList.remove('active-step'));
+        document.getElementById('step-' + s).classList.add('active-step');
     }
 
     function sendSMS(btn) {
         const val = btn.parentElement.querySelector('input').value;
-        if(!val) return alert("Please scan the QR code first!");
+        if(!val) return alert("No data to send!");
         window.location.href = `sms:?body=${encodeURIComponent(val)}`;
     }
 
-    // ==========================================
-    // UI & DATA HELPERS
-    // ==========================================
     function refresh() {
         const year = document.getElementById('yearFilter').value;
         let total = 0;
