@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Fixed Camera Isolation</title>
+    <title>Gift Card Tracker - Restored & Fixed</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -33,7 +33,7 @@
         #reader { width: 100%; flex-grow: 1; background: #000; position: relative; }
         
         .scan-window { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); border: 2.5px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 10; pointer-events: none; }
-        .rect-box { width: 280px; height: 100px; }
+        .rect-box { width: 280px; height: 110px; }
         .square-box { width: 240px; height: 240px; }
 
         .scanner-footer { background: #fff; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 12px; border-radius: 24px 24px 0 0; z-index: 100; }
@@ -67,27 +67,27 @@
     
     <div class="scanner-footer">
         <div id="step-1" class="scan-step active-step">
-            <span id="scan-hint" style="font-weight: 700; color: #1e293b;">Initializing...</span>
+            <span id="scan-hint" style="font-weight: 700; color: #1e293b;">Center Code...</span>
             <div id="btn-snap" onclick="manualSnap()" style="width:60px; height:60px; background:var(--primary); border-radius:50%; display:none; align-items:center; justify-content:center; color:white;">
                 <i class="material-icons-round" style="font-size:32px">photo_camera</i>
             </div>
-            <button onclick="stopScanner()" style="background:#f1f5f9; border:none; color:#4b5563; padding:10px 24px; border-radius:20px; font-weight:bold;">CLOSE CAMERA</button>
+            <button onclick="stopScanner()" style="background:#f1f5f9; border:none; color:#4b5563; padding:10px 24px; border-radius:20px; font-weight:bold;">CLOSE</button>
         </div>
 
         <div id="step-2" class="scan-step">
-            <span style="font-weight: 700;">Confirm Image</span>
+            <span style="font-weight: 700;">Captured Preview</span>
             <div class="preview-container"><canvas id="hidden-canvas" style="display:none;"></canvas><img id="captured-img" src=""></div>
             <div style="display:flex; gap:10px; width:100%;">
-                <button onclick="processPreview()" style="background:var(--primary); color:white; flex:2; border:none; padding:14px; border-radius:30px; font-weight:bold;">EXTRACT DATA</button>
+                <button onclick="processPreview()" style="background:var(--primary); color:white; flex:2; border:none; padding:14px; border-radius:30px; font-weight:bold;">PROCESS</button>
                 <button onclick="retakePhoto()" style="background:#f1f5f9; flex:1; border:none; border-radius:30px;"><i class="material-icons-round">refresh</i></button>
             </div>
         </div>
 
         <div id="step-3" class="scan-step">
-            <span style="font-weight: 700;">Final Result</span>
+            <span style="font-weight: 700;">Confirm Data</span>
             <input type="text" id="final-code" class="result-box">
-            <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:14px; border-radius:30px; font-weight:bold;">SAVE TO LIST</button>
-            <button onclick="retakePhoto()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE SCAN</button>
+            <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:14px; border-radius:30px; font-weight:bold;">SAVE</button>
+            <button onclick="retakePhoto()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE</button>
         </div>
     </div>
 </div>
@@ -100,7 +100,7 @@
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_Isolated_V2";
+    const DB_KEY = "Tracker_Final_Fix_V3";
     let html5QrCode = null, activeInput = null, currentMode = '', worker = null, tempScannedText = "";
 
     async function init() {
@@ -134,44 +134,53 @@
         refresh();
     }
 
+    async function cleanupCamera() {
+        if (html5QrCode) {
+            try { if (html5QrCode.isScanning) await html5QrCode.stop(); } catch (e) {}
+            html5QrCode.clear();
+            html5QrCode = null;
+        }
+        document.getElementById('reader').innerHTML = '<div id="scan-window" class="scan-window"></div>';
+    }
+
     async function startScan(btn, mode) {
         activeInput = btn.parentElement.querySelector('input');
         currentMode = mode;
         tempScannedText = "";
         
-        // 1. Reset UI and cleanup camera
         await cleanupCamera();
         document.getElementById('scanner-overlay').style.display = 'flex';
         changeStep(1);
 
         const win = document.getElementById('scan-window');
-        const hint = document.getElementById('scan-hint');
         const snap = document.getElementById('btn-snap');
+        const hint = document.getElementById('scan-hint');
 
-        // 2. Setup Mode Specifics
-        let config = { fps: 15 };
+        let config = { fps: 20 };
+
         if (mode === 'act') {
             win.className = "scan-window square-box";
-            hint.innerText = "Align QR Code";
+            hint.innerText = "Point at QR Code";
             snap.style.display = 'none';
             config.qrbox = { width: 240, height: 240 };
         } else {
             win.className = "scan-window rect-box";
-            hint.innerText = (mode === 'gc') ? "Align Code & Snap" : "Align Barcode";
+            hint.innerText = (mode === 'gc') ? "Focus Code & Snap" : "Focus Barcode";
             snap.style.display = (mode === 'gc') ? 'flex' : 'none';
-            config.qrbox = { width: 280, height: 100 };
+            config.qrbox = { width: 280, height: 110 };
         }
 
-        // 3. Start Camera
         html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start({ facingMode: "environment" }, config, (txt) => {
+            // Auto-scan Logic for Barcode (Ref) and QR (Act)
             if (mode !== 'gc') {
                 tempScannedText = txt;
+                document.getElementById('final-code').value = txt;
                 html5QrCode.pause();
-                captureFrame();
-                changeStep(2);
+                captureFrame(); // Take the preview picture
+                changeStep(2);  // Go to Preview
             }
-        }).catch(err => alert("Camera Error: " + err));
+        }).catch(err => console.error(err));
     }
 
     function manualSnap() {
@@ -187,11 +196,11 @@
 
         const isSquare = (currentMode === 'act');
         canvas.width = isSquare ? 400 : 600;
-        canvas.height = isSquare ? 400 : 200;
+        canvas.height = isSquare ? 400 : 250;
         
         const ctx = canvas.getContext('2d'), vW = video.videoWidth, vH = video.videoHeight;
-        const cropW = isSquare ? (vH * 0.6) : (vW * 0.8);
-        const cropH = isSquare ? cropW : (cropW / 3);
+        const cropW = isSquare ? (vH * 0.7) : (vW * 0.85);
+        const cropH = isSquare ? cropW : (cropW / 2.5);
         const startX = (vW - cropW) / 2, startY = (vH * 0.45) - (cropH / 2);
         
         ctx.drawImage(video, startX, startY, cropW, cropH, 0, 0, canvas.width, canvas.height);
@@ -200,27 +209,16 @@
 
     async function processPreview() {
         const final = document.getElementById('final-code');
-        changeStep(3);
         if (currentMode === 'gc') {
-            final.value = "Reading...";
+            final.value = "Reading Code...";
+            changeStep(3);
             const { data: { text } } = await worker.recognize(document.getElementById('hidden-canvas'));
             final.value = text.replace(/[^A-Z0-9-]/gi, '').trim();
         } else {
+            // Ref and Act already have their text from the auto-scan
             final.value = tempScannedText;
+            changeStep(3);
         }
-    }
-
-    async function cleanupCamera() {
-        if (html5QrCode) {
-            try {
-                if (html5QrCode.isScanning) await html5QrCode.stop();
-                html5QrCode.clear();
-            } catch (e) {}
-            html5QrCode = null;
-        }
-        // Force DOM cleanup to prevent ghosting
-        const reader = document.getElementById('reader');
-        reader.innerHTML = '<div id="scan-window" class="scan-window"></div>';
     }
 
     function stopScanner() {
@@ -249,7 +247,7 @@
 
     function sendSMS(btn) {
         const val = btn.parentElement.querySelector('input').value;
-        if(!val) return alert("No data to send!");
+        if(!val) return alert("Scan QR first!");
         window.location.href = `sms:?body=${encodeURIComponent(val)}`;
     }
 
