@@ -3,56 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Pro UI</title>
+    <title>Gift Card Tracker - Fix Edition</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root { --primary: #2563eb; --secondary: #0f172a; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; --google-blue: #4285F4; }
-        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #1e293b; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #1e293b; }
         
-        /* Top Header */
         .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .inr-text { font-size: 1.6rem; font-weight: 800; color: var(--success); }
 
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
-        
-        /* Card UI */
         .item-card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .btn-del { position: absolute; top: -10px; right: -10px; background: white; color: var(--danger); border: 1px solid #fee2e2; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
+        .btn-del { position: absolute; top: -10px; right: -10px; background: white; color: var(--danger); border: 1px solid #fee2e2; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .full-width { grid-column: span 2; }
         label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
-        input, select { width: 100%; box-sizing: border-box; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; transition: border-color 0.2s; }
-        input:focus { border-color: var(--google-blue); }
+        input, select { width: 100%; box-sizing: border-box; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; }
         
         .scan-group { display: flex; gap: 8px; }
         .btn-scan { background: #f1f5f9; color: var(--secondary); border: 1.5px solid #e2e8f0; padding: 0 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; }
 
-        /* Google Lens Style Overlay */
+        /* LENS UI */
         #scanner-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; }
         #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
-        .scan-window { 
-            position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); 
-            width: 280px; height: 100px; border: 2px solid rgba(255,255,255,0.5); 
-            border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 100;
-        }
-        /* Corners */
-        .scan-window::before, .scan-window::after { content: ''; position: absolute; width: 20px; height: 20px; border: 4px solid var(--google-blue); }
-        .scan-window::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; border-radius: 12px 0 0 0; }
-        .scan-window::after { bottom: -2px; right: -2px; border-left: 0; border-top: 0; border-radius: 0 0 12px 0; }
+        .scan-window { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 100px; border: 2px solid rgba(255,255,255,0.5); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 100; pointer-events: none; }
+        .scan-window::before { content: ''; position: absolute; top: -2px; left: -2px; width: 20px; height: 20px; border: 4px solid var(--google-blue); border-right: 0; border-bottom: 0; border-radius: 12px 0 0 0; }
+        .scan-window::after { content: ''; position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; border: 4px solid var(--google-blue); border-left: 0; border-top: 0; border-radius: 0 0 12px 0; }
 
         .scanner-footer { background: #fff; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; border-radius: 24px 24px 0 0; }
         .shutter-btn { width: 70px; height: 70px; background: #fff; border: 5px solid #e2e8f0; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .shutter-inner { width: 54px; height: 54px; background: var(--google-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
 
         #confirm-ui { display: none; width: 100%; flex-direction: column; align-items: center; gap: 15px; }
-        .result-preview { width: 90%; text-align: center; font-size: 24px; font-weight: bold; color: var(--google-blue); padding: 15px; background: #f8faff; border-radius: 12px; border: none; }
+        .result-preview { width: 90%; text-align: center; font-size: 24px; font-weight: bold; color: var(--google-blue); padding: 15px; background: #f8faff; border-radius: 12px; border: 1.5px solid var(--google-blue); }
 
-        /* Bottom Nav UI */
-        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 100; box-shadow: 0 -4px 10px rgba(0,0,0,0.03); }
+        .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 100; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #64748b; font-size: 11px; font-weight: 600; cursor: pointer; background: none; border: none; gap: 4px; }
-        .nav-item i { font-size: 24px; }
         .btn-add-main { background: var(--google-blue); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(66,133,244,0.4); margin-top: -40px; border: 4px solid white; }
     </style>
 </head>
@@ -63,7 +51,7 @@
         <div style="font-size: 10px; font-weight: bold; color: #94a3b8; letter-spacing: 1px;">TOTAL BALANCE</div>
         <div class="inr-text" id="totalINR">₹0.00</div>
     </div>
-    <select id="yearFilter" onchange="refresh()" style="width: auto; padding: 6px 12px; background: rgba(255,255,255,0.1); color: white; border: none; font-weight: bold;"></select>
+    <select id="yearFilter" onchange="refresh()" style="width: auto; padding: 6px 12px; background: rgba(255,255,255,0.1); color: white; border: none; font-weight: bold; border-radius: 8px;"></select>
 </div>
 
 <div class="container" id="expenseList"></div>
@@ -71,47 +59,30 @@
 <div id="scanner-overlay">
     <div id="reader"><div class="scan-window"></div></div>
     <div class="scanner-footer">
-        <div id="scan-status" style="font-weight: 600; color: #475569;">Focus on text</div>
-        
+        <div id="scan-status" style="font-weight: 600; color: #475569;">Focus on code</div>
         <div id="shutter-group">
-            <div class="shutter-btn" onclick="captureOCR()">
-                <div class="shutter-inner"><i class="material-icons-round">center_focus_strong</i></div>
-            </div>
+            <div class="shutter-btn" onclick="captureOCR()"><div class="shutter-inner"><i class="material-icons-round">center_focus_strong</i></div></div>
         </div>
-
         <div id="confirm-ui">
             <input type="text" id="edit-result" class="result-preview">
             <button onclick="commitScan()" style="background:var(--google-blue); color:white; border:none; padding:15px; border-radius:50px; font-weight:bold; width: 100%; display:flex; align-items:center; justify-content:center; gap:8px;">
-                <i class="material-icons-round">check_circle</i> DONE
+                <i class="material-icons-round">check_circle</i> CONFIRM & SAVE
             </button>
-            <button onclick="resetScanner()" style="background:none; border:none; color:#64748b; font-weight:bold; display:flex; align-items:center; gap:5px;">
-                <i class="material-icons-round">refresh</i> RETAKE
-            </button>
+            <button onclick="resetScanner()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE</button>
         </div>
-        <button onclick="stopScanner()" style="background:none; border:none; color:#94a3b8; margin-top: 5px; font-weight:600;">CLOSE</button>
+        <button onclick="stopScanner()" style="background:none; border:none; color:#94a3b8; font-weight:600;">CLOSE</button>
     </div>
 </div>
 
 <div class="bottom-actions">
-    <button class="nav-item" onclick="document.getElementById('importFile').click()">
-        <i class="material-icons-round" style="color: #ea4335;">file_upload</i>
-        <span>Import</span>
-    </button>
-    
-    <button class="btn-add-main" onclick="addNew()">
-        <i class="material-icons-round" style="font-size: 32px;">add</i>
-    </button>
-    
-    <button class="nav-item" onclick="exportData()">
-        <i class="material-icons-round" style="color: #34a853;">file_download</i>
-        <span>Export</span>
-    </button>
+    <button class="nav-item" onclick="document.getElementById('importFile').click()"><i class="material-icons-round" style="color:#ea4335">file_upload</i><span>Import</span></button>
+    <button class="btn-add-main" onclick="addNew()"><i class="material-icons-round" style="font-size:32px">add</i></button>
+    <button class="nav-item" onclick="exportData()"><i class="material-icons-round" style="color:#34a853">file_download</i><span>Export</span></button>
 </div>
-
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_Ultimate_V1";
+    const DB_KEY = "Tracker_Ultimate_V2";
     let html5QrCode = null;
     let currentInput = null;
     let scanMode = 'ocr';
@@ -139,7 +110,7 @@
         div.innerHTML = `
             <button class="btn-del" onclick="this.parentElement.remove(); save(); refresh();"><i class="material-icons-round" style="font-size:18px">close</i></button>
             <div><label><i class="material-icons-round" style="font-size:14px">calendar_today</i> Date</label><input type="date" class="d-date" value="${data.date || ''}" onchange="save(); refresh();"></div>
-            <div class="full-width"><label><i class="material-icons-round" style="font-size:14px">description</i> Description</label><input type="text" class="d-item" placeholder="Enter item name..." value="${data.item || ''}" oninput="save();"></div>
+            <div class="full-width"><label><i class="material-icons-round" style="font-size:14px">description</i> Description</label><input type="text" class="d-item" value="${data.item || ''}" oninput="save();"></div>
             <div><label><i class="material-icons-round" style="font-size:14px">qr_code_2</i> Ref ID</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><button class="btn-scan" onclick="openScanner(this, 'barcode')"><i class="material-icons-round">barcode_scanner</i></button></div></div>
             <div><label><i class="material-icons-round" style="font-size:14px">payments</i> Price (₹)</label><input type="number" class="d-price" value="${data.price || ''}" oninput="save(); refresh();"></div>
             <div><label><i class="material-icons-round" style="font-size:14px">percent</i> Discount</label><input type="number" class="d-disc" value="${data.disc || ''}" oninput="save(); refresh();"></div>
@@ -164,44 +135,55 @@
             document.getElementById('shutter-group').style.display = 'none';
             document.getElementById('scan-status').innerText = "Scanning Barcode...";
             html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: {width: 250, height: 100} }, (txt) => {
-                currentInput.value = txt; stopScanner(); save();
+                // FIXED: Now Barcode also shows confirmation screen
+                document.getElementById('edit-result').value = txt;
+                document.getElementById('shutter-group').style.display = 'none';
+                document.getElementById('confirm-ui').style.display = 'flex';
+                document.getElementById('scan-status').innerText = "Barcode Detected";
+                html5QrCode.pause(); // Pause camera feed
             });
         } else {
             document.getElementById('shutter-group').style.display = 'flex';
-            document.getElementById('scan-status').innerText = "Align code in box";
+            document.getElementById('scan-status').innerText = "Align code & Capture";
             await html5QrCode.start({ facingMode: "environment" }, { fps: 20 }, () => {});
         }
     }
 
     async function captureOCR() {
-        document.getElementById('scan-status').innerText = "Reading text...";
+        document.getElementById('scan-status').innerText = "Reading...";
         const video = document.querySelector('video');
         const canvas = document.createElement('canvas');
         canvas.width = 800; canvas.height = 300;
         const ctx = canvas.getContext('2d');
-        // Pointing Alignment Fix (Middle-Top of video feed)
         ctx.drawImage(video, video.videoWidth*0.2, video.videoHeight*0.35, video.videoWidth*0.6, video.videoHeight*0.2, 0, 0, 800, 300);
 
         const { data: { text } } = await worker.recognize(canvas);
         document.getElementById('edit-result').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
         document.getElementById('shutter-group').style.display = 'none';
         document.getElementById('confirm-ui').style.display = 'flex';
-        document.getElementById('scan-status').innerText = "Check detection";
     }
 
     function commitScan() {
-        currentInput.value = document.getElementById('edit-result').value;
-        stopScanner(); save();
+        if (currentInput) {
+            currentInput.value = document.getElementById('edit-result').value;
+            save(); refresh();
+        }
+        stopScanner();
+    }
+
+    function resetScanner() {
+        document.getElementById('confirm-ui').style.display = 'none';
+        if (scanMode === 'ocr') {
+            document.getElementById('shutter-group').style.display = 'flex';
+        } else {
+            if (html5QrCode) html5QrCode.resume();
+        }
+        document.getElementById('scan-status').innerText = scanMode === 'barcode' ? "Scanning Barcode..." : "Align code & Capture";
     }
 
     function stopScanner() {
         if (html5QrCode && html5QrCode.isScanning) html5QrCode.stop();
         document.getElementById('scanner-overlay').style.display = 'none';
-    }
-
-    function resetScanner() {
-        document.getElementById('confirm-ui').style.display = 'none';
-        if(scanMode === 'ocr') document.getElementById('shutter-group').style.display = 'flex';
     }
 
     function refresh() {
@@ -234,7 +216,7 @@
         const blob = new Blob([data], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `Backup_${new Date().toLocaleDateString()}.json`;
+        a.download = `Tracker_Backup.json`;
         a.click();
     }
 
