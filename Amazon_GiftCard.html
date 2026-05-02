@@ -9,17 +9,34 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root { --primary: #4285F4; --success: #34A853; --danger: #EA4335; --secondary: #202124; --bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #3c4043; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #3c4043; }
         
-        /* HEADER */
-        .top-dash { position: sticky; top: 0; z-index: 100; background: var(--secondary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .inr-text { font-size: 1.6rem; font-weight: 800; color: var(--success); }
+        /* HEADER - FIXED YEAR DROPDOWN SIZE */
+        .top-dash { 
+            position: sticky; top: 0; z-index: 100; 
+            background: var(--secondary); color: white; 
+            padding: 12px 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+        }
+        .inr-text { font-size: 1.4rem; font-weight: 800; color: var(--success); }
+        
+        #yearFilter { 
+            width: 80px; /* Small fixed width */
+            padding: 6px 4px; 
+            font-size: 14px; 
+            font-weight: bold;
+            color: white; 
+            background: #374151; 
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            text-align: center;
+        }
 
-        /* LIST UI */
+        /* CARD STYLES */
         .container { max-width: 800px; margin: 15px auto; padding: 0 12px; }
         .item-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn-del { position: absolute; top: -10px; right: -10px; background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 5; border: none; color: var(--danger); }
         
-        .btn-del { position: absolute; top: -10px; right: -10px; background: white; color: var(--danger); border: 1px solid #fee2e2; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .full-width { grid-column: span 2; }
         label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block; }
         
@@ -28,36 +45,19 @@
         .price-input { border: 1.5px solid #cbd5e1; border-radius: 10px; width: 100%; box-sizing: border-box; }
         .btn-icon-scan { background: #f8fafc; border-left: 1px solid #e2e8f0; color: #64748b; padding: 8px 12px; cursor: pointer; }
 
-        /* SCANNER OVERLAY FIX */
+        /* SCANNER UI */
         #scanner-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; flex-direction: column; }
-        #reader { width: 100%; flex-grow: 1; position: relative; }
-        .scan-window { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 80px; border: 2px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.7); z-index: 10; pointer-events: none; }
+        #reader { width: 100%; flex-grow: 1; position: relative; overflow: hidden; }
+        .scan-window { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 100px; border: 2.5px solid var(--primary); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.8); z-index: 10; pointer-events: none; }
 
-        /* FIXED FOOTER PREVENTS HIDING BUTTONS */
-        .scanner-footer { 
-            background: #fff; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            gap: 15px; 
-            border-radius: 24px 24px 0 0; 
-            z-index: 100;
-            position: relative;
-        }
-        
-        .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 12px; }
+        .scanner-footer { background: #fff; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 12px; border-radius: 24px 24px 0 0; z-index: 100; flex-shrink: 0; }
+        .scan-step { display: none; width: 100%; flex-direction: column; align-items: center; gap: 10px; }
         .active-step { display: flex; }
-
-        #captured-img { width: 100%; max-height: 100px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; background: #eee; }
-        .result-box { width: 100%; text-align: center; font-size: 20px; font-weight: bold; color: var(--primary); padding: 12px; background: #f1f5f9; border-radius: 10px; border: none; margin: 5px 0; }
-
-        .btn-action { width: 100%; padding: 15px; border-radius: 30px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-success { background: var(--success); color: white; }
-        .btn-ghost { background: none; color: #64748b; }
-
-        /* BOTTOM NAV */
+        .preview-container { width: 280px; height: 100px; overflow: hidden; border-radius: 8px; border: 2px solid var(--primary); background: #000; }
+        #captured-img { width: 100%; height: 100%; object-fit: contain; }
+        .result-box { width: 100%; text-align: center; font-size: 20px; font-weight: bold; color: var(--primary); padding: 12px; background: #f1f5f9; border-radius: 10px; border: none; box-sizing: border-box; }
+        
+        /* ACTIONS */
         .bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 20px 25px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; z-index: 90; }
         .btn-add-main { background: var(--primary); color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(66,133,244,0.3); margin-top: -35px; border: 4px solid white; }
     </style>
@@ -69,7 +69,7 @@
         <div style="font-size: 10px; font-weight: bold; color: #94a3b8;">YEARLY TOTAL</div>
         <div class="inr-text" id="totalINR">₹0.00</div>
     </div>
-    <select id="yearFilter" onchange="refresh()" style="width: auto; padding: 4px 8px; color: white; background: #374151; border-radius: 6px;"></select>
+    <select id="yearFilter" onchange="refresh()"></select>
 </div>
 
 <div class="container" id="expenseList"></div>
@@ -77,30 +77,22 @@
 <div id="scanner-overlay">
     <div id="reader"><div class="scan-window"></div></div>
     <div class="scanner-footer">
-        
         <div id="step-1" class="scan-step active-step">
-            <span id="scan-label" style="font-weight: 600;">Align code & click</span>
-            <div onclick="takePhoto()" style="width:64px; height:64px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                <i class="material-icons-round" style="font-size:32px">photo_camera</i>
-            </div>
-            <button onclick="stopScanner()" class="btn-ghost">CANCEL</button>
+            <span style="font-weight: 700;">Center Code in Box</span>
+            <div onclick="takePhoto()" style="width:60px; height:60px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white;"><i class="material-icons-round" style="font-size:32px">photo_camera</i></div>
+            <button onclick="stopScanner()" style="background:none; border:none; color:#64748b; font-weight:bold;">CANCEL</button>
         </div>
-
         <div id="step-2" class="scan-step">
-            <span style="font-weight: 600;">Preview Captured Image</span>
-            <canvas id="hidden-canvas" style="display:none;"></canvas>
-            <img id="captured-img" src="">
+            <div class="preview-container"><canvas id="hidden-canvas" style="display:none;"></canvas><img id="captured-img" src=""></div>
             <div style="display:flex; gap:10px; width:100%;">
-                <button onclick="runLogic()" class="btn-action btn-primary" style="flex:2;">PROCESS</button>
-                <button onclick="resetScanner()" class="btn-action" style="flex:1; background:#f1f5f9;"><i class="material-icons-round">refresh</i></button>
+                <button onclick="runLogic()" style="background:var(--primary); color:white; flex:2; border:none; padding:14px; border-radius:30px; font-weight:bold;">READ CODE</button>
+                <button onclick="resetScanner()" style="background:#f1f5f9; flex:1; border:none; border-radius:30px;"><i class="material-icons-round">refresh</i></button>
             </div>
         </div>
-
         <div id="step-3" class="scan-step">
-            <span style="font-weight: 600;">Extracted Result</span>
             <input type="text" id="final-code" class="result-box">
-            <button onclick="confirmToUI()" class="btn-action btn-success">CONFIRM & SAVE</button>
-            <button onclick="resetScanner()" class="btn-ghost">RETAKE PHOTO</button>
+            <button onclick="confirmToUI()" style="width:100%; background:var(--success); color:white; border:none; padding:14px; border-radius:30px; font-weight:bold;">SAVE TO LIST</button>
+            <button onclick="resetScanner()" style="background:none; border:none; color:#64748b; font-weight:bold; margin-top:5px;">RETAKE</button>
         </div>
     </div>
 </div>
@@ -113,17 +105,12 @@
 <input type="file" id="importFile" hidden onchange="importData(event)">
 
 <script>
-    const DB_KEY = "Tracker_LayoutFix_V1";
-    let html5QrCode = null;
-    let activeInput = null;
-    let mode = 'barcode';
-    let worker = null;
-    let barcodeBuffer = null;
+    const DB_KEY = "Tracker_Final_V3";
+    let html5QrCode = null, activeInput = null, mode = 'barcode', worker = null, barcodeBuffer = null;
 
     async function init() {
         const saved = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-        const cy = new Date().getFullYear();
-        const yf = document.getElementById('yearFilter');
+        const cy = new Date().getFullYear(), yf = document.getElementById('yearFilter');
         for(let i=cy-2; i<=cy+1; i++){
             let o = document.createElement('option'); o.value=i; o.innerText=i;
             if(i===cy) o.selected=true; yf.appendChild(o);
@@ -137,69 +124,37 @@
         const div = document.createElement('div');
         div.className = "item-card";
         div.innerHTML = `
-            <div class="btn-del" onclick="this.parentElement.remove(); save(); refresh();"><i class="material-icons-round" style="font-size:16px">close</i></div>
+            <button class="btn-del" onclick="this.parentElement.remove(); save(); refresh();"><i class="material-icons-round">close</i></button>
             <div><label>Date</label><input type="date" class="d-date price-input" value="${data.date || ''}" onchange="save(); refresh();"></div>
             <div><label>Price (₹)</label><input type="number" class="d-price price-input" value="${data.price || ''}" oninput="save(); refresh();"></div>
-            <div class="full-width"><label>Description</label><input type="text" class="d-item price-input" placeholder="Note..." value="${data.item || ''}" oninput="save();"></div>
-            
-            <div class="full-width">
-                <label>Ref ID (Barcode)</label>
-                <div class="scan-group">
-                    <input type="text" class="d-ref" placeholder="Barcode value" value="${data.ref || ''}" oninput="save();">
-                    <div class="btn-icon-scan" onclick="startScan(this, 'barcode')"><i class="material-icons-round">barcode_scanner</i></div>
-                </div>
-            </div>
-
-            <div class="full-width">
-                <label>Gift Card (Camera)</label>
-                <div class="scan-group">
-                    <input type="text" class="d-gc" placeholder="Extracted code" value="${data.gc || ''}" oninput="save();">
-                    <div class="btn-icon-scan" onclick="startScan(this, 'ocr')"><i class="material-icons-round">photo_camera</i></div>
-                </div>
-            </div>
-
-            <div><label>Discount %</label><input type="number" class="d-disc price-input" value="${data.disc || ''}" oninput="save(); refresh();"></div>
-            <div><label>Status</label>
-                <select class="d-status price-input" onchange="save();">
-                    <option ${data.status=='No'?'selected':''}>No</option>
-                    <option ${data.status=='Yes'?'selected':''}>Yes</option>
-                </select>
-            </div>
+            <div class="full-width"><label>Description</label><input type="text" class="d-item price-input" placeholder="Store Name" value="${data.item || ''}" oninput="save();"></div>
+            <div class="full-width"><label>Ref ID</label><div class="scan-group"><input type="text" class="d-ref" value="${data.ref || ''}" oninput="save();"><div class="btn-icon-scan" onclick="startScan(this, 'barcode')"><i class="material-icons-round">barcode_scanner</i></div></div></div>
+            <div class="full-width"><label>Gift Code</label><div class="scan-group"><input type="text" class="d-gc" value="${data.gc || ''}" oninput="save();"><div class="btn-icon-scan" onclick="startScan(this, 'ocr')"><i class="material-icons-round">photo_camera</i></div></div></div>
+            <div><label>Disc %</label><input type="number" class="d-disc price-input" value="${data.disc || ''}" oninput="save(); refresh();"></div>
+            <div><label>Redeemed</label><select class="d-status price-input" onchange="save();"><option ${data.status=='No'?'selected':''}>No</option><option ${data.status=='Yes'?'selected':''}>Yes</option></select></div>
         `;
         document.getElementById('expenseList').appendChild(div);
     }
 
     async function startScan(btn, scanMode) {
         activeInput = btn.parentElement.querySelector('input');
-        mode = scanMode;
-        barcodeBuffer = null;
+        mode = scanMode; barcodeBuffer = null;
         document.getElementById('scanner-overlay').style.display = 'flex';
         changeStep(1);
-
         if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-        
-        const config = { facingMode: "environment" };
-        const qConfig = { fps: 20, qrbox: { width: 280, height: 80 } };
-
+        const qConfig = { fps: 30, qrbox: { width: 280, height: 100 } };
         if(mode === 'barcode') {
-            document.getElementById('scan-label').innerText = "Scanning Barcode...";
-            html5QrCode.start(config, qConfig, (txt) => {
-                barcodeBuffer = txt;
-                takePhoto();
-            }).catch(err => alert("Camera error: " + err));
-        } else {
-            document.getElementById('scan-label').innerText = "Align Gift Code & Capture";
-            await html5QrCode.start(config, qConfig, () => {});
-        }
+            html5QrCode.start({ facingMode: "environment" }, qConfig, (txt) => { barcodeBuffer = txt; takePhoto(); });
+        } else { await html5QrCode.start({ facingMode: "environment" }, qConfig, () => {}); }
     }
 
     function takePhoto() {
-        const video = document.querySelector('video');
-        const canvas = document.getElementById('hidden-canvas');
-        canvas.width = 800; canvas.height = 300;
-        const ctx = canvas.getContext('2d');
-        // Capture a wide strip from center
-        ctx.drawImage(video, video.videoWidth*0.1, video.videoHeight*0.3, video.videoWidth*0.8, video.videoHeight*0.2, 0, 0, 800, 300);
+        const video = document.querySelector('video'), canvas = document.getElementById('hidden-canvas');
+        canvas.width = 560; canvas.height = 200;
+        const ctx = canvas.getContext('2d'), vW = video.videoWidth, vH = video.videoHeight;
+        const cropW = vW * 0.8, cropH = cropW / 2.8;
+        const startX = (vW - cropW) / 2, startY = (vH * 0.45) - (cropH / 2);
+        ctx.drawImage(video, startX, startY, cropW, cropH, 0, 0, 560, 200);
         document.getElementById('captured-img').src = canvas.toDataURL('image/png');
         changeStep(2);
         if(html5QrCode) html5QrCode.pause();
@@ -210,65 +165,33 @@
             document.getElementById('final-code').value = barcodeBuffer;
             changeStep(3);
         } else {
-            document.getElementById('final-code').value = "Extracting...";
+            document.getElementById('final-code').value = "Processing...";
             changeStep(3);
-            const canvas = document.getElementById('hidden-canvas');
-            const { data: { text } } = await worker.recognize(canvas);
+            const { data: { text } } = await worker.recognize(document.getElementById('hidden-canvas'));
             document.getElementById('final-code').value = text.replace(/[^A-Z0-9-]/gi, '').trim();
         }
     }
 
-    function confirmToUI() {
-        if(activeInput) {
-            activeInput.value = document.getElementById('final-code').value;
-            save(); refresh();
-        }
-        stopScanner();
-    }
-
-    function changeStep(s) {
-        document.querySelectorAll('.scan-step').forEach(el => el.classList.remove('active-step'));
-        document.getElementById('step-' + s).classList.add('active-step');
-    }
-
-    function resetScanner() {
-        if(html5QrCode) html5QrCode.resume();
-        changeStep(1);
-    }
-
-    function stopScanner() {
-        if(html5QrCode) {
-            html5QrCode.stop().then(() => {
-                document.getElementById('scanner-overlay').style.display = 'none';
-            }).catch(() => {
-                document.getElementById('scanner-overlay').style.display = 'none';
-            });
-        }
-    }
+    function confirmToUI() { if(activeInput) { activeInput.value = document.getElementById('final-code').value; save(); refresh(); } stopScanner(); }
+    function changeStep(s) { document.querySelectorAll('.scan-step').forEach(el => el.classList.remove('active-step')); document.getElementById('step-' + s).classList.add('active-step'); }
+    function resetScanner() { if(html5QrCode) html5QrCode.resume(); changeStep(1); }
+    function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-overlay').style.display = 'none'; }); }
 
     function refresh() {
         const year = document.getElementById('yearFilter').value;
         let total = 0;
         document.querySelectorAll('.item-card').forEach(card => {
-            const dt = card.querySelector('.d-date').value;
-            const p = parseFloat(card.querySelector('.d-price').value) || 0;
-            const d = parseFloat(card.querySelector('.d-disc').value) || 0;
-            if(!dt || dt.startsWith(year)) {
-                total += (p - (p * (d / 100)));
-                card.style.display = "grid";
-            } else { card.style.display = "none"; }
+            const dt = card.querySelector('.d-date').value, p = parseFloat(card.querySelector('.d-price').value) || 0, d = parseFloat(card.querySelector('.d-disc').value) || 0;
+            if(!dt || dt.startsWith(year)) { total += (p - (p * (d / 100))); card.style.display = "grid"; } else card.style.display = "none";
         });
         document.getElementById('totalINR').innerText = `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
     }
 
     function save() {
         const list = Array.from(document.querySelectorAll('.item-card')).map(c => ({
-            date: c.querySelector('.d-date').value,
-            item: c.querySelector('.d-item').value, 
-            ref: c.querySelector('.d-ref').value,
-            price: c.querySelector('.d-price').value, 
-            disc: c.querySelector('.d-disc').value,
-            gc: c.querySelector('.d-gc').value, 
+            date: c.querySelector('.d-date').value, item: c.querySelector('.d-item').value, 
+            ref: c.querySelector('.d-ref').value, price: c.querySelector('.d-price').value, 
+            disc: c.querySelector('.d-disc').value, gc: c.querySelector('.d-gc').value, 
             status: c.querySelector('.d-status').value
         }));
         localStorage.setItem(DB_KEY, JSON.stringify(list));
@@ -277,8 +200,7 @@
     function exportData() {
         const data = localStorage.getItem(DB_KEY);
         const blob = new Blob([data], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = `Backup.json`; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup.json`; a.click();
     }
 
     function importData(event) {
