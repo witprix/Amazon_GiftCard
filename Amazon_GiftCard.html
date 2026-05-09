@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gift Card Tracker - Solid Version</title>
+    <title>Gift Card Tracker - Pro Export Version</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -296,48 +296,58 @@
         localStorage.setItem(DB_KEY, JSON.stringify(list));
     }
 
-    // UPDATED EXPORT FUNCTION
-    function exportData() {
+    // UPDATED EXPORT WITH "SAVE AS" FOLDER PICKER
+    async function exportData() {
         const data = localStorage.getItem(DB_KEY);
         if (!data || data === "[]") {
             alert("No data to export!");
             return;
         }
 
-        // Prompt for filename
-        let fileName = prompt("Enter filename for your data backup:", "GiftCard_Tracker_Data");
-        
-        // Handle Cancel or empty
-        if (fileName === null) return; 
-        fileName = fileName.trim().replace(/[^a-z0-9_\-]/gi, '_') || "Backup";
-        const finalFileName = `${fileName}.json`;
+        // 1. Try modern "Save File Picker" (Opens native folder window)
+        if ('showSaveFilePicker' in window) {
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: 'GiftCard_Backup.json',
+                    types: [{
+                        description: 'JSON Data',
+                        accept: {'application/json': ['.json']},
+                    }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(data);
+                await writable.close();
+                return; // Success
+            } catch (err) {
+                if (err.name !== 'AbortError') console.error(err);
+                // If user cancels system dialog, we stop.
+                if (err.name === 'AbortError') return; 
+            }
+        }
 
-        // Trigger Download
+        // 2. Fallback for mobile/other browsers (Prompt + Download)
+        let fileName = prompt("Enter filename:", "GiftCard_Backup");
+        if (fileName === null) return;
+        fileName = fileName.trim().replace(/[^a-z0-9_\-]/gi, '_') || "Backup";
+        
         const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = finalFileName;
+        a.download = fileName.endsWith('.json') ? fileName : fileName + '.json';
         document.body.appendChild(a);
         a.click();
-        
-        // Cleanup
-        setTimeout(() => {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }, 0);
+        setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
     }
 
     function importData(event) {
         const reader = new FileReader();
         reader.onload = (e) => { 
             try {
-                JSON.parse(e.target.result); // Validate JSON
+                JSON.parse(e.target.result);
                 localStorage.setItem(DB_KEY, e.target.result); 
                 location.reload(); 
-            } catch(err) {
-                alert("Invalid backup file.");
-            }
+            } catch(err) { alert("Invalid backup file."); }
         };
         reader.readAsText(event.target.files[0]);
     }
