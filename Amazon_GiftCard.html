@@ -28,7 +28,6 @@
         .btn-icon-scan { background: #f8fafc; border-left: 1px solid #e2e8f0; color: #64748b; padding: 8px 12px; cursor: pointer; }
         .btn-sms { background: #e8f0fe; border-left: 1px solid #cbd5e1; color: var(--primary); padding: 8px 12px; cursor: pointer; }
 
-        /* SCANNER OVERLAY */
         #scanner-overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; flex-direction: column; }
         #reader-container { width: 100%; flex-grow: 1; background: #000; position: relative; overflow: hidden; }
         #reader { width: 100%; height: 100%; }
@@ -187,7 +186,7 @@
                 }
             });
         } catch (err) {
-            alert("Camera failed to start. Ensure permissions are granted.");
+            alert("Camera failed to start.");
             stopScanner();
         }
     }
@@ -297,14 +296,49 @@
         localStorage.setItem(DB_KEY, JSON.stringify(list));
     }
 
+    // UPDATED EXPORT FUNCTION
     function exportData() {
-        const blob = new Blob([localStorage.getItem(DB_KEY)], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Tracker_Data.json`; a.click();
+        const data = localStorage.getItem(DB_KEY);
+        if (!data || data === "[]") {
+            alert("No data to export!");
+            return;
+        }
+
+        // Prompt for filename
+        let fileName = prompt("Enter filename for your data backup:", "GiftCard_Tracker_Data");
+        
+        // Handle Cancel or empty
+        if (fileName === null) return; 
+        fileName = fileName.trim().replace(/[^a-z0-9_\-]/gi, '_') || "Backup";
+        const finalFileName = `${fileName}.json`;
+
+        // Trigger Download
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = finalFileName;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 0);
     }
 
     function importData(event) {
         const reader = new FileReader();
-        reader.onload = (e) => { localStorage.setItem(DB_KEY, e.target.result); location.reload(); };
+        reader.onload = (e) => { 
+            try {
+                JSON.parse(e.target.result); // Validate JSON
+                localStorage.setItem(DB_KEY, e.target.result); 
+                location.reload(); 
+            } catch(err) {
+                alert("Invalid backup file.");
+            }
+        };
         reader.readAsText(event.target.files[0]);
     }
 
